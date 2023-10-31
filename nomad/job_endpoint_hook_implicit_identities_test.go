@@ -116,6 +116,8 @@ func Test_jobImplicitIdentitiesHook_Mutate_consul_service(t *testing.T) {
 			},
 			expectedOutputJob: &structs.Job{
 				TaskGroups: []*structs.TaskGroup{{
+					Constraints: []*structs.Constraint{
+						implicitIdentityClientVersionConstraint()},
 					Services: []*structs.Service{
 						{
 							Provider:  "consul",
@@ -190,6 +192,8 @@ func Test_jobImplicitIdentitiesHook_Mutate_consul_service(t *testing.T) {
 			},
 			expectedOutputJob: &structs.Job{
 				TaskGroups: []*structs.TaskGroup{{
+					Constraints: []*structs.Constraint{
+						implicitIdentityClientVersionConstraint()},
 					Services: []*structs.Service{{
 						Provider:  "consul",
 						PortLabel: "80",
@@ -238,6 +242,8 @@ func Test_jobImplicitIdentitiesHook_Mutate_consul_service(t *testing.T) {
 			expectedOutputJob: &structs.Job{
 				TaskGroups: []*structs.TaskGroup{{
 					Name: "group",
+					Constraints: []*structs.Constraint{
+						implicitIdentityClientVersionConstraint()},
 					Tasks: []*structs.Task{{
 						Name:      "web-task",
 						Templates: []*structs.Template{{}},
@@ -364,6 +370,8 @@ func Test_jobImplicitIndentitiesHook_Mutate_vault(t *testing.T) {
 			},
 			expectedOutputJob: &structs.Job{
 				TaskGroups: []*structs.TaskGroup{{
+					Constraints: []*structs.Constraint{
+						implicitIdentityClientVersionConstraint()},
 					Tasks: []*structs.Task{{
 						Identities: []*structs.WorkloadIdentity{{
 							Name:     "vault_default",
@@ -398,6 +406,8 @@ func Test_jobImplicitIndentitiesHook_Mutate_vault(t *testing.T) {
 			},
 			expectedOutputJob: &structs.Job{
 				TaskGroups: []*structs.TaskGroup{{
+					Constraints: []*structs.Constraint{
+						implicitIdentityClientVersionConstraint()},
 					Tasks: []*structs.Task{{
 						Identities: []*structs.WorkloadIdentity{{
 							Name:     "vault_default",
@@ -437,6 +447,8 @@ func Test_jobImplicitIndentitiesHook_Mutate_vault(t *testing.T) {
 			},
 			expectedOutputJob: &structs.Job{
 				TaskGroups: []*structs.TaskGroup{{
+					Constraints: []*structs.Constraint{
+						implicitIdentityClientVersionConstraint()},
 					Tasks: []*structs.Task{{
 						Identities: []*structs.WorkloadIdentity{{
 							Name:     "vault_other",

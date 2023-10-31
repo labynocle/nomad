@@ -19,22 +19,41 @@ func (jobImplicitIdentitiesHook) Name() string {
 
 func (h jobImplicitIdentitiesHook) Mutate(job *structs.Job) (*structs.Job, []error, error) {
 	for _, tg := range job.TaskGroups {
+		var hasIdentity bool
+
 		for _, s := range tg.Services {
 			h.handleConsulService(s)
+			hasIdentity = hasIdentity || s.Identity != nil
 		}
 
 		for _, t := range tg.Tasks {
 			for _, s := range t.Services {
 				h.handleConsulService(s)
+				hasIdentity = hasIdentity || s.Identity != nil
 			}
 			if len(t.Templates) > 0 {
 				h.handleConsulTasks(t)
 			}
 			h.handleVault(t)
+			hasIdentity = hasIdentity || (len(t.Identities) > 0)
+		}
+
+		if hasIdentity {
+			tg.Constraints = append(tg.Constraints, implicitIdentityClientVersionConstraint())
 		}
 	}
 
 	return job, nil, nil
+}
+
+// implicitIdentityClientVersionConstraint is used when the client needs to
+// support a workload identity workflow for Consul or Vault.
+func implicitIdentityClientVersionConstraint() *structs.Constraint {
+	return &structs.Constraint{
+		LTarget: "${attr.nomad.version}",
+		RTarget: ">= 1.7.0",
+		Operand: structs.ConstraintSemver,
+	}
 }
 
 // handleConsulService injects a workload identity to the service if:
@@ -66,6 +85,7 @@ func (h jobImplicitIdentitiesHook) handleConsulService(s *structs.Service) {
 	serviceWID.ServiceName = s.Name
 
 	s.Identity = serviceWID
+	return
 }
 
 func (h jobImplicitIdentitiesHook) handleConsulTasks(t *structs.Task) {
@@ -88,6 +108,7 @@ func (h jobImplicitIdentitiesHook) handleConsulTasks(t *structs.Task) {
 	}
 	taskWID.Name = widName
 	t.Identities = append(t.Identities, taskWID)
+	return
 }
 
 // handleVault injects a workload identity to the task if:
@@ -118,4 +139,5 @@ func (h jobImplicitIdentitiesHook) handleVault(t *structs.Task) {
 	// Set the expected identity name and inject it into the task.
 	vaultWID.Name = vaultWIDName
 	t.Identities = append(t.Identities, vaultWID)
+	return
 }

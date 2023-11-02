@@ -414,6 +414,12 @@ func (c *vaultClient) renew(req *vaultClientRenewalRequest) error {
 		return fmt.Errorf("increment cannot be less than 1")
 	}
 
+	// Verity token is still in the heap as it may have been removed while
+	// waiting for the renewal timer to tick.
+	if !c.isTracked(req.id) {
+		return nil
+	}
+
 	var renewalErr error
 	leaseDuration := req.increment
 	if req.isToken {
@@ -453,6 +459,7 @@ func (c *vaultClient) renew(req *vaultClientRenewalRequest) error {
 	fatal := false
 	if renewalErr != nil &&
 		(strings.Contains(renewalErr.Error(), "lease not found or lease is not renewable") ||
+			strings.Contains(renewalErr.Error(), "invalid lease ID") ||
 			strings.Contains(renewalErr.Error(), "lease is not renewable") ||
 			strings.Contains(renewalErr.Error(), "token not found") ||
 			strings.Contains(renewalErr.Error(), "permission denied")) {

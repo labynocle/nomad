@@ -370,6 +370,11 @@ func (c *vaultClient) RenewToken(token string, increment int) (<-chan error, err
 		increment: increment,
 	}
 
+	// Add renewal request to the heap to start tracking the token.
+	c.lock.Lock()
+	c.heap.Push(renewalReq, time.Now())
+	c.lock.Unlock()
+
 	// Perform the renewal of the token and send any error to the dedicated
 	// error channel.
 	if err := c.renew(renewalReq); err != nil {
@@ -386,6 +391,7 @@ func (c *vaultClient) RenewToken(token string, increment int) (<-chan error, err
 // successful, min-heap is updated based on the duration after which it needs
 // renewal again. The next renewal time is randomly selected to avoid spikes in
 // the number of APIs periodically.
+// Only tokens that are present in the heap are renewed.
 func (c *vaultClient) renew(req *vaultClientRenewalRequest) error {
 	c.lock.Lock()
 	defer c.lock.Unlock()

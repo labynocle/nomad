@@ -1135,12 +1135,6 @@ func ApiTgToStructsTG(job *structs.Job, taskGroup *api.TaskGroup, tg *structs.Ta
 		RenderTemplates: *taskGroup.RestartPolicy.RenderTemplates,
 	}
 
-	if taskGroup.RescheduleOnLost == nil {
-		tg.RescheduleOnLost = true
-	} else {
-		tg.RescheduleOnLost = *taskGroup.RescheduleOnLost
-	}
-
 	if taskGroup.ShutdownDelay != nil {
 		tg.ShutdownDelay = taskGroup.ShutdownDelay
 	}
@@ -1155,12 +1149,13 @@ func ApiTgToStructsTG(job *structs.Job, taskGroup *api.TaskGroup, tg *structs.Ta
 
 	if taskGroup.ReschedulePolicy != nil {
 		tg.ReschedulePolicy = &structs.ReschedulePolicy{
-			Attempts:      *taskGroup.ReschedulePolicy.Attempts,
-			Interval:      *taskGroup.ReschedulePolicy.Interval,
-			Delay:         *taskGroup.ReschedulePolicy.Delay,
-			DelayFunction: *taskGroup.ReschedulePolicy.DelayFunction,
-			MaxDelay:      *taskGroup.ReschedulePolicy.MaxDelay,
-			Unlimited:     *taskGroup.ReschedulePolicy.Unlimited,
+			Attempts:         *taskGroup.ReschedulePolicy.Attempts,
+			Interval:         *taskGroup.ReschedulePolicy.Interval,
+			Delay:            *taskGroup.ReschedulePolicy.Delay,
+			DelayFunction:    *taskGroup.ReschedulePolicy.DelayFunction,
+			MaxDelay:         *taskGroup.ReschedulePolicy.MaxDelay,
+			Unlimited:        *taskGroup.ReschedulePolicy.Unlimited,
+			RescheduleOnLost: *taskGroup.ReschedulePolicy.RescheduleOnLost,
 		}
 	}
 

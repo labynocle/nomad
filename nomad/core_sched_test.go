@@ -1946,7 +1946,6 @@ func TestAllocation_GCEligible(t *testing.T) {
 		DesiredStatus       string
 		JobStatus           string
 		JobStop             bool
-		RescheduleOnLost    *bool
 		AllocJobModifyIndex uint64
 		JobModifyIndex      uint64
 		ModifyIndex         uint64
@@ -2000,63 +1999,79 @@ func TestAllocation_GCEligible(t *testing.T) {
 			ShouldGC:       false,
 		},
 		{
-			Desc:             "GC when terminal but not failed ",
-			ClientStatus:     structs.AllocClientStatusComplete,
-			DesiredStatus:    structs.AllocDesiredStatusRun,
-			GCTime:           fail,
-			ModifyIndex:      90,
-			ThresholdIndex:   90,
-			ReschedulePolicy: nil,
-			ShouldGC:         true,
+			Desc:           "GC when terminal but not failed ",
+			ClientStatus:   structs.AllocClientStatusComplete,
+			DesiredStatus:  structs.AllocDesiredStatusRun,
+			GCTime:         fail,
+			ModifyIndex:    90,
+			ThresholdIndex: 90,
+			ReschedulePolicy: &structs.ReschedulePolicy{
+				RescheduleOnLost: true,
+			},
+			ShouldGC: true,
 		},
 		{
-			Desc:             "Don't GC when threshold not met",
-			ClientStatus:     structs.AllocClientStatusComplete,
-			DesiredStatus:    structs.AllocDesiredStatusStop,
-			GCTime:           fail,
-			ModifyIndex:      100,
-			ThresholdIndex:   90,
-			ReschedulePolicy: nil,
-			ShouldGC:         false,
+			Desc:           "Don't GC when threshold not met",
+			ClientStatus:   structs.AllocClientStatusComplete,
+			DesiredStatus:  structs.AllocDesiredStatusStop,
+			GCTime:         fail,
+			ModifyIndex:    100,
+			ThresholdIndex: 90,
+			ReschedulePolicy: &structs.ReschedulePolicy{
+				RescheduleOnLost: true,
+			},
+			ShouldGC: false,
 		},
 		{
-			Desc:             "GC when no reschedule policy",
-			ClientStatus:     structs.AllocClientStatusFailed,
-			DesiredStatus:    structs.AllocDesiredStatusRun,
-			GCTime:           fail,
-			ReschedulePolicy: nil,
-			ModifyIndex:      90,
-			ThresholdIndex:   90,
-			ShouldGC:         true,
+			Desc:          "GC when no reschedule policy",
+			ClientStatus:  structs.AllocClientStatusFailed,
+			DesiredStatus: structs.AllocDesiredStatusRun,
+			GCTime:        fail,
+			ReschedulePolicy: &structs.ReschedulePolicy{
+				RescheduleOnLost: true,
+			},
+			ModifyIndex:    90,
+			ThresholdIndex: 90,
+			ShouldGC:       true,
 		},
 		{
-			Desc:             "GC when empty policy",
-			ClientStatus:     structs.AllocClientStatusFailed,
-			DesiredStatus:    structs.AllocDesiredStatusRun,
-			GCTime:           fail,
-			ReschedulePolicy: &structs.ReschedulePolicy{Attempts: 0, Interval: 0 * time.Minute},
-			ModifyIndex:      90,
-			ThresholdIndex:   90,
-			ShouldGC:         true,
+			Desc:          "GC when empty policy",
+			ClientStatus:  structs.AllocClientStatusFailed,
+			DesiredStatus: structs.AllocDesiredStatusRun,
+			GCTime:        fail,
+			ReschedulePolicy: &structs.ReschedulePolicy{
+				Attempts:         0,
+				Interval:         0 * time.Minute,
+				RescheduleOnLost: true,
+			},
+			ModifyIndex:    90,
+			ThresholdIndex: 90,
+			ShouldGC:       true,
 		},
 		{
-			Desc:             "Don't GC when no previous reschedule attempts",
-			ClientStatus:     structs.AllocClientStatusFailed,
-			DesiredStatus:    structs.AllocDesiredStatusRun,
-			GCTime:           fail,
-			ModifyIndex:      90,
-			ThresholdIndex:   90,
-			ReschedulePolicy: &structs.ReschedulePolicy{Attempts: 1, Interval: 1 * time.Minute},
-			ShouldGC:         false,
+			Desc:           "Don't GC when no previous reschedule attempts",
+			ClientStatus:   structs.AllocClientStatusFailed,
+			DesiredStatus:  structs.AllocDesiredStatusRun,
+			GCTime:         fail,
+			ModifyIndex:    90,
+			ThresholdIndex: 90,
+			ReschedulePolicy: &structs.ReschedulePolicy{
+				Attempts:         1,
+				Interval:         1 * time.Minute,
+				RescheduleOnLost: true},
+			ShouldGC: false,
 		},
 		{
-			Desc:             "Don't GC when prev reschedule attempt within interval",
-			ClientStatus:     structs.AllocClientStatusFailed,
-			DesiredStatus:    structs.AllocDesiredStatusRun,
-			ReschedulePolicy: &structs.ReschedulePolicy{Attempts: 2, Interval: 30 * time.Minute},
-			GCTime:           fail,
-			ModifyIndex:      90,
-			ThresholdIndex:   90,
+			Desc:          "Don't GC when prev reschedule attempt within interval",
+			ClientStatus:  structs.AllocClientStatusFailed,
+			DesiredStatus: structs.AllocDesiredStatusRun,
+			ReschedulePolicy: &structs.ReschedulePolicy{
+				Attempts:         2,
+				Interval:         30 * time.Minute,
+				RescheduleOnLost: true},
+			GCTime:         fail,
+			ModifyIndex:    90,
+			ThresholdIndex: 90,
 			RescheduleTrackers: []*structs.RescheduleEvent{
 				{
 					RescheduleTime: fail.Add(-5 * time.Minute).UTC().UnixNano(),
@@ -2065,11 +2080,14 @@ func TestAllocation_GCEligible(t *testing.T) {
 			ShouldGC: false,
 		},
 		{
-			Desc:             "GC with prev reschedule attempt outside interval",
-			ClientStatus:     structs.AllocClientStatusFailed,
-			DesiredStatus:    structs.AllocDesiredStatusRun,
-			GCTime:           fail,
-			ReschedulePolicy: &structs.ReschedulePolicy{Attempts: 5, Interval: 30 * time.Minute},
+			Desc:          "GC with prev reschedule attempt outside interval",
+			ClientStatus:  structs.AllocClientStatusFailed,
+			DesiredStatus: structs.AllocDesiredStatusRun,
+			GCTime:        fail,
+			ReschedulePolicy: &structs.ReschedulePolicy{
+				Attempts:         5,
+				Interval:         30 * time.Minute,
+				RescheduleOnLost: true},
 			RescheduleTrackers: []*structs.RescheduleEvent{
 				{
 					RescheduleTime: fail.Add(-45 * time.Minute).UTC().UnixNano(),
@@ -2081,11 +2099,14 @@ func TestAllocation_GCEligible(t *testing.T) {
 			ShouldGC: true,
 		},
 		{
-			Desc:             "GC when next alloc id is set",
-			ClientStatus:     structs.AllocClientStatusFailed,
-			DesiredStatus:    structs.AllocDesiredStatusRun,
-			GCTime:           fail,
-			ReschedulePolicy: &structs.ReschedulePolicy{Attempts: 5, Interval: 30 * time.Minute},
+			Desc:          "GC when next alloc id is set",
+			ClientStatus:  structs.AllocClientStatusFailed,
+			DesiredStatus: structs.AllocDesiredStatusRun,
+			GCTime:        fail,
+			ReschedulePolicy: &structs.ReschedulePolicy{
+				Attempts:         5,
+				Interval:         30 * time.Minute,
+				RescheduleOnLost: true},
 			RescheduleTrackers: []*structs.RescheduleEvent{
 				{
 					RescheduleTime: fail.Add(-3 * time.Minute).UTC().UnixNano(),
@@ -2095,11 +2116,16 @@ func TestAllocation_GCEligible(t *testing.T) {
 			ShouldGC:    true,
 		},
 		{
-			Desc:             "Don't GC when next alloc id is not set and unlimited restarts",
-			ClientStatus:     structs.AllocClientStatusFailed,
-			DesiredStatus:    structs.AllocDesiredStatusRun,
-			GCTime:           fail,
-			ReschedulePolicy: &structs.ReschedulePolicy{Unlimited: true, Delay: 5 * time.Second, DelayFunction: "constant"},
+			Desc:          "Don't GC when next alloc id is not set and unlimited restarts",
+			ClientStatus:  structs.AllocClientStatusFailed,
+			DesiredStatus: structs.AllocDesiredStatusRun,
+			GCTime:        fail,
+			ReschedulePolicy: &structs.ReschedulePolicy{
+				Unlimited:        true,
+				Delay:            5 * time.Second,
+				DelayFunction:    "constant",
+				RescheduleOnLost: true,
+			},
 			RescheduleTrackers: []*structs.RescheduleEvent{
 				{
 					RescheduleTime: fail.Add(-3 * time.Minute).UTC().UnixNano(),
@@ -2108,11 +2134,15 @@ func TestAllocation_GCEligible(t *testing.T) {
 			ShouldGC: false,
 		},
 		{
-			Desc:             "GC when job is stopped",
-			ClientStatus:     structs.AllocClientStatusFailed,
-			DesiredStatus:    structs.AllocDesiredStatusRun,
-			GCTime:           fail,
-			ReschedulePolicy: &structs.ReschedulePolicy{Attempts: 5, Interval: 30 * time.Minute},
+			Desc:          "GC when job is stopped",
+			ClientStatus:  structs.AllocClientStatusFailed,
+			DesiredStatus: structs.AllocDesiredStatusRun,
+			GCTime:        fail,
+			ReschedulePolicy: &structs.ReschedulePolicy{
+				Attempts:         5,
+				Interval:         30 * time.Minute,
+				RescheduleOnLost: true,
+			},
 			RescheduleTrackers: []*structs.RescheduleEvent{
 				{
 					RescheduleTime: fail.Add(-3 * time.Minute).UTC().UnixNano(),
@@ -2128,22 +2158,33 @@ func TestAllocation_GCEligible(t *testing.T) {
 			GCTime:        fail,
 			JobStatus:     structs.JobStatusDead,
 			ShouldGC:      true,
+			ReschedulePolicy: &structs.ReschedulePolicy{
+				Attempts:         5,
+				Interval:         30 * time.Minute,
+				RescheduleOnLost: true,
+			},
 		},
 		{
-			Desc:             "Don't GC when alloc is lost and not being rescheduled",
-			ClientStatus:     structs.AllocClientStatusLost,
-			DesiredStatus:    structs.AllocDesiredStatusStop,
-			RescheduleOnLost: pointer.Of(false),
-			GCTime:           fail,
-			JobStatus:        structs.JobStatusDead,
-			ShouldGC:         false,
+			Desc:          "Don't GC when alloc is lost and not being rescheduled",
+			ClientStatus:  structs.AllocClientStatusLost,
+			DesiredStatus: structs.AllocDesiredStatusStop,
+			ReschedulePolicy: &structs.ReschedulePolicy{
+				RescheduleOnLost: false,
+			},
+			GCTime:    fail,
+			JobStatus: structs.JobStatusDead,
+			ShouldGC:  false,
 		},
 		{
-			Desc:             "GC when job status is dead",
-			ClientStatus:     structs.AllocClientStatusFailed,
-			DesiredStatus:    structs.AllocDesiredStatusRun,
-			GCTime:           fail,
-			ReschedulePolicy: &structs.ReschedulePolicy{Attempts: 5, Interval: 30 * time.Minute},
+			Desc:          "GC when job status is dead",
+			ClientStatus:  structs.AllocClientStatusFailed,
+			DesiredStatus: structs.AllocDesiredStatusRun,
+			GCTime:        fail,
+			ReschedulePolicy: &structs.ReschedulePolicy{
+				Attempts:         5,
+				Interval:         30 * time.Minute,
+				RescheduleOnLost: true,
+			},
 			RescheduleTrackers: []*structs.RescheduleEvent{
 				{
 					RescheduleTime: fail.Add(-3 * time.Minute).UTC().UnixNano(),
@@ -2153,19 +2194,28 @@ func TestAllocation_GCEligible(t *testing.T) {
 			ShouldGC:  true,
 		},
 		{
-			Desc:             "GC when desired status is stop, unlimited reschedule policy, no previous reschedule events",
-			ClientStatus:     structs.AllocClientStatusFailed,
-			DesiredStatus:    structs.AllocDesiredStatusStop,
-			GCTime:           fail,
-			ReschedulePolicy: &structs.ReschedulePolicy{Unlimited: true, Delay: 5 * time.Second, DelayFunction: "constant"},
-			ShouldGC:         true,
+			Desc:          "GC when desired status is stop, unlimited reschedule policy, no previous reschedule events",
+			ClientStatus:  structs.AllocClientStatusFailed,
+			DesiredStatus: structs.AllocDesiredStatusStop,
+			GCTime:        fail,
+			ReschedulePolicy: &structs.ReschedulePolicy{
+				Unlimited:        true,
+				Delay:            5 * time.Second,
+				DelayFunction:    "constant",
+				RescheduleOnLost: true,
+			},
+			ShouldGC: true,
 		},
 		{
-			Desc:             "GC when desired status is stop, limited reschedule policy, some previous reschedule events",
-			ClientStatus:     structs.AllocClientStatusFailed,
-			DesiredStatus:    structs.AllocDesiredStatusStop,
-			GCTime:           fail,
-			ReschedulePolicy: &structs.ReschedulePolicy{Attempts: 5, Interval: 30 * time.Minute},
+			Desc:          "GC when desired status is stop, limited reschedule policy, some previous reschedule events",
+			ClientStatus:  structs.AllocClientStatusFailed,
+			DesiredStatus: structs.AllocDesiredStatusStop,
+			GCTime:        fail,
+			ReschedulePolicy: &structs.ReschedulePolicy{
+				Attempts:         5,
+				Interval:         30 * time.Minute,
+				RescheduleOnLost: true,
+			},
 			RescheduleTrackers: []*structs.RescheduleEvent{
 				{
 					RescheduleTime: fail.Add(-3 * time.Minute).UTC().UnixNano(),
@@ -2184,10 +2234,8 @@ func TestAllocation_GCEligible(t *testing.T) {
 		alloc.NextAllocation = tc.NextAllocID
 		job := mock.Job()
 		alloc.TaskGroup = job.TaskGroups[0].Name
-		if tc.RescheduleOnLost != nil {
-			job.TaskGroups[0].RescheduleOnLost = *tc.RescheduleOnLost
-		}
 		job.TaskGroups[0].ReschedulePolicy = tc.ReschedulePolicy
+
 		if tc.JobStatus != "" {
 			job.Status = tc.JobStatus
 		}

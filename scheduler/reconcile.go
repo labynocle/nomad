@@ -772,7 +772,7 @@ func (a *allocReconciler) computePlacements(group *structs.TaskGroup,
 	// Add replacements for disconnected and lost allocs up to group.Count
 	existing := len(untainted) + len(migrate) + len(reschedule)
 
-	if group.RescheduleOnLost {
+	if group.ReschedulePolicy.RescheduleOnLost {
 		// Add replacements for lost
 		for _, alloc := range lost {
 			if existing >= group.Count {
@@ -852,8 +852,8 @@ func (a *allocReconciler) computeReplacements(tg *structs.TaskGroup, deploymentP
 
 	// If allocs have been lost, determine the number of replacements that are needed
 	// and add placements to the result for the lost allocs.
-	if len(lost) != 0 && tg.RescheduleOnLost {
-		allowed := helper.Min(len(lost), len(place))
+	if len(lost) != 0 && tg.ReschedulePolicy.RescheduleOnLost {
+		allowed := min(len(lost), len(place))
 		desiredChanges.Place += uint64(allowed)
 		a.result.place = append(a.result.place, place[:allowed]...)
 	}
@@ -991,7 +991,7 @@ func (a *allocReconciler) computeStop(group *structs.TaskGroup, nameIndex *alloc
 	// Mark all lost allocations for stop.
 	var stop allocSet
 	stop = stop.union(lost)
-	if group.RescheduleOnLost {
+	if group.ReschedulePolicy.RescheduleOnLost {
 		a.markDelayed(lost, structs.AllocClientStatusLost, allocLost, followupEvals)
 	} else {
 		a.markStop(lost, structs.AllocClientStatusLost, allocLost)

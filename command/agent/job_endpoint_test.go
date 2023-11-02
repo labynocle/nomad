@@ -2545,225 +2545,96 @@ func TestHTTPServer_jobServiceRegistrations(t *testing.T) {
 func TestJobs_ApiJobToStructsJob(t *testing.T) {
 	ci.Parallel(t)
 
-	apiJob := &api.Job{
-		Stop:        pointer.Of(true),
-		Region:      pointer.Of("global"),
-		Namespace:   pointer.Of("foo"),
-		ID:          pointer.Of("foo"),
-		ParentID:    pointer.Of("lol"),
-		Name:        pointer.Of("name"),
-		Type:        pointer.Of("service"),
-		Priority:    pointer.Of(50),
-		AllAtOnce:   pointer.Of(true),
-		Datacenters: []string{"dc1", "dc2"},
-		Constraints: []*api.Constraint{
-			{
-				LTarget: "a",
-				RTarget: "b",
-				Operand: "c",
-			},
-		},
-		Affinities: []*api.Affinity{
-			{
-				LTarget: "a",
-				RTarget: "b",
-				Operand: "c",
-				Weight:  pointer.Of(int8(50)),
-			},
-		},
-		Update: &api.UpdateStrategy{
-			Stagger:          pointer.Of(1 * time.Second),
-			MaxParallel:      pointer.Of(5),
-			HealthCheck:      pointer.Of(structs.UpdateStrategyHealthCheck_Manual),
-			MinHealthyTime:   pointer.Of(1 * time.Minute),
-			HealthyDeadline:  pointer.Of(3 * time.Minute),
-			ProgressDeadline: pointer.Of(3 * time.Minute),
-			AutoRevert:       pointer.Of(false),
-			Canary:           pointer.Of(1),
-		},
-		Spreads: []*api.Spread{
-			{
-				Attribute: "${meta.rack}",
-				Weight:    pointer.Of(int8(100)),
-				SpreadTarget: []*api.SpreadTarget{
-					{
-						Value:   "r1",
-						Percent: 50,
-					},
-				},
-			},
-		},
-		Periodic: &api.PeriodicConfig{
-			Enabled:         pointer.Of(true),
-			Spec:            pointer.Of("spec"),
-			Specs:           []string{"spec"},
-			SpecType:        pointer.Of("cron"),
-			ProhibitOverlap: pointer.Of(true),
-			TimeZone:        pointer.Of("test zone"),
-		},
-		ParameterizedJob: &api.ParameterizedJobConfig{
-			Payload:      "payload",
-			MetaRequired: []string{"a", "b"},
-			MetaOptional: []string{"c", "d"},
-		},
-		Payload: []byte("payload"),
-		Meta: map[string]string{
-			"foo": "bar",
-		},
-		Multiregion: &api.Multiregion{
-			Strategy: &api.MultiregionStrategy{
-				MaxParallel: pointer.Of(2),
-				OnFailure:   pointer.Of("fail_all"),
-			},
-			Regions: []*api.MultiregionRegion{
-				{
-					Name:        "west",
-					Count:       pointer.Of(1),
-					Datacenters: []string{"dc1", "dc2"},
-					Meta:        map[string]string{"region_code": "W"},
-				},
-			},
-		},
-		TaskGroups: []*api.TaskGroup{
-			{
-				Name:  pointer.Of("group1"),
-				Count: pointer.Of(5),
+	testCases := []struct {
+		name              string
+		apiJob            *api.Job
+		expectedStructJob *structs.Job
+	}{
+		{
+			name: "non-system-job",
+			apiJob: &api.Job{
+				Stop:        pointer.Of(true),
+				Region:      pointer.Of("global"),
+				Namespace:   pointer.Of("foo"),
+				ID:          pointer.Of("foo"),
+				ParentID:    pointer.Of("lol"),
+				Name:        pointer.Of("name"),
+				Type:        pointer.Of("service"),
+				Priority:    pointer.Of(50),
+				AllAtOnce:   pointer.Of(true),
+				Datacenters: []string{"dc1", "dc2"},
 				Constraints: []*api.Constraint{
 					{
-						LTarget: "x",
-						RTarget: "y",
-						Operand: "z",
+						LTarget: "a",
+						RTarget: "b",
+						Operand: "c",
 					},
 				},
 				Affinities: []*api.Affinity{
 					{
-						LTarget: "x",
-						RTarget: "y",
-						Operand: "z",
-						Weight:  pointer.Of(int8(100)),
+						LTarget: "a",
+						RTarget: "b",
+						Operand: "c",
+						Weight:  pointer.Of(int8(50)),
 					},
 				},
-				RestartPolicy: &api.RestartPolicy{
-					Interval:        pointer.Of(1 * time.Second),
-					Attempts:        pointer.Of(5),
-					Delay:           pointer.Of(10 * time.Second),
-					Mode:            pointer.Of("delay"),
-					RenderTemplates: pointer.Of(false),
-				},
-				ReschedulePolicy: &api.ReschedulePolicy{
-					Interval:      pointer.Of(12 * time.Hour),
-					Attempts:      pointer.Of(5),
-					DelayFunction: pointer.Of("constant"),
-					Delay:         pointer.Of(30 * time.Second),
-					Unlimited:     pointer.Of(true),
-					MaxDelay:      pointer.Of(20 * time.Minute),
-				},
-				Migrate: &api.MigrateStrategy{
-					MaxParallel:     pointer.Of(12),
-					HealthCheck:     pointer.Of("task_events"),
-					MinHealthyTime:  pointer.Of(12 * time.Hour),
-					HealthyDeadline: pointer.Of(12 * time.Hour),
+				Update: &api.UpdateStrategy{
+					Stagger:          pointer.Of(1 * time.Second),
+					MaxParallel:      pointer.Of(5),
+					HealthCheck:      pointer.Of(structs.UpdateStrategyHealthCheck_Manual),
+					MinHealthyTime:   pointer.Of(1 * time.Minute),
+					HealthyDeadline:  pointer.Of(3 * time.Minute),
+					ProgressDeadline: pointer.Of(3 * time.Minute),
+					AutoRevert:       pointer.Of(false),
+					Canary:           pointer.Of(1),
 				},
 				Spreads: []*api.Spread{
 					{
-						Attribute: "${node.datacenter}",
+						Attribute: "${meta.rack}",
 						Weight:    pointer.Of(int8(100)),
 						SpreadTarget: []*api.SpreadTarget{
 							{
-								Value:   "dc1",
-								Percent: 100,
+								Value:   "r1",
+								Percent: 50,
 							},
 						},
 					},
 				},
-				EphemeralDisk: &api.EphemeralDisk{
-					SizeMB:  pointer.Of(100),
-					Sticky:  pointer.Of(true),
-					Migrate: pointer.Of(true),
+				Periodic: &api.PeriodicConfig{
+					Enabled:         pointer.Of(true),
+					Spec:            pointer.Of("spec"),
+					Specs:           []string{"spec"},
+					SpecType:        pointer.Of("cron"),
+					ProhibitOverlap: pointer.Of(true),
+					TimeZone:        pointer.Of("test zone"),
 				},
-				Update: &api.UpdateStrategy{
-					HealthCheck:      pointer.Of(structs.UpdateStrategyHealthCheck_Checks),
-					MinHealthyTime:   pointer.Of(2 * time.Minute),
-					HealthyDeadline:  pointer.Of(5 * time.Minute),
-					ProgressDeadline: pointer.Of(5 * time.Minute),
-					AutoRevert:       pointer.Of(true),
+				ParameterizedJob: &api.ParameterizedJobConfig{
+					Payload:      "payload",
+					MetaRequired: []string{"a", "b"},
+					MetaOptional: []string{"c", "d"},
 				},
+				Payload: []byte("payload"),
 				Meta: map[string]string{
-					"key": "value",
+					"foo": "bar",
 				},
-				Consul: &api.Consul{
-					Namespace: "team-foo",
-				},
-				Services: []*api.Service{
-					{
-						Name:              "groupserviceA",
-						Tags:              []string{"a", "b"},
-						CanaryTags:        []string{"d", "e"},
-						EnableTagOverride: true,
-						PortLabel:         "1234",
-						Address:           "group.example.com",
-						Meta: map[string]string{
-							"servicemeta": "foobar",
-						},
-						TaggedAddresses: map[string]string{
-							"wan": "1.2.3.4",
-						},
-						CheckRestart: &api.CheckRestart{
-							Limit: 4,
-							Grace: pointer.Of(11 * time.Second),
-						},
-						Checks: []api.ServiceCheck{
-							{
-								Name:          "bar",
-								Type:          "http",
-								Command:       "foo",
-								Args:          []string{"a", "b"},
-								Path:          "/check",
-								Protocol:      "http",
-								Method:        http.MethodPost,
-								Body:          "{\"check\":\"mem\"}",
-								PortLabel:     "foo",
-								AddressMode:   "driver",
-								GRPCService:   "foo.Bar",
-								GRPCUseTLS:    true,
-								Interval:      4 * time.Second,
-								Timeout:       2 * time.Second,
-								InitialStatus: "ok",
-								CheckRestart: &api.CheckRestart{
-									Limit:          3,
-									IgnoreWarnings: true,
-								},
-								TaskName:               "task1",
-								SuccessBeforePassing:   2,
-								FailuresBeforeCritical: 3,
-							},
-						},
-						Connect: &api.ConsulConnect{
-							Native: false,
-							SidecarService: &api.ConsulSidecarService{
-								Tags:                   []string{"f", "g"},
-								Port:                   "9000",
-								DisableDefaultTCPCheck: true,
-								Meta: map[string]string{
-									"test-key": "test-value",
-								},
-							},
+				Multiregion: &api.Multiregion{
+					Strategy: &api.MultiregionStrategy{
+						MaxParallel: pointer.Of(2),
+						OnFailure:   pointer.Of("fail_all"),
+					},
+					Regions: []*api.MultiregionRegion{
+						{
+							Name:        "west",
+							Count:       pointer.Of(1),
+							Datacenters: []string{"dc1", "dc2"},
+							Meta:        map[string]string{"region_code": "W"},
 						},
 					},
 				},
-				MaxClientDisconnect: pointer.Of(30 * time.Second),
-				Tasks: []*api.Task{
+				TaskGroups: []*api.TaskGroup{
 					{
-						Name:   "task1",
-						Leader: true,
-						Driver: "docker",
-						User:   "mary",
-						Config: map[string]interface{}{
-							"lol": "code",
-						},
-						Env: map[string]string{
-							"hello": "world",
-						},
+						Name:  pointer.Of("group1"),
+						Count: pointer.Of(5),
 						Constraints: []*api.Constraint{
 							{
 								LTarget: "x",
@@ -2773,47 +2644,77 @@ func TestJobs_ApiJobToStructsJob(t *testing.T) {
 						},
 						Affinities: []*api.Affinity{
 							{
-								LTarget: "a",
-								RTarget: "b",
-								Operand: "c",
-								Weight:  pointer.Of(int8(50)),
-							},
-						},
-						Identities: []*api.WorkloadIdentity{
-							{
-								Name:         "aws",
-								Audience:     []string{"s3"},
-								Env:          true,
-								File:         true,
-								ChangeMode:   "signal",
-								ChangeSignal: "SIGHUP",
-							},
-						},
-						VolumeMounts: []*api.VolumeMount{
-							{
-								Volume:          pointer.Of("vol"),
-								Destination:     pointer.Of("dest"),
-								ReadOnly:        pointer.Of(false),
-								PropagationMode: pointer.Of("a"),
+								LTarget: "x",
+								RTarget: "y",
+								Operand: "z",
+								Weight:  pointer.Of(int8(100)),
 							},
 						},
 						RestartPolicy: &api.RestartPolicy{
-							Interval:        pointer.Of(2 * time.Second),
-							Attempts:        pointer.Of(10),
-							Delay:           pointer.Of(20 * time.Second),
+							Interval:        pointer.Of(1 * time.Second),
+							Attempts:        pointer.Of(5),
+							Delay:           pointer.Of(10 * time.Second),
 							Mode:            pointer.Of("delay"),
 							RenderTemplates: pointer.Of(false),
 						},
+						ReschedulePolicy: &api.ReschedulePolicy{
+							Interval:         pointer.Of(12 * time.Hour),
+							Attempts:         pointer.Of(5),
+							DelayFunction:    pointer.Of("constant"),
+							Delay:            pointer.Of(30 * time.Second),
+							Unlimited:        pointer.Of(true),
+							MaxDelay:         pointer.Of(20 * time.Minute),
+							RescheduleOnLost: pointer.Of(false),
+						},
+						Migrate: &api.MigrateStrategy{
+							MaxParallel:     pointer.Of(12),
+							HealthCheck:     pointer.Of("task_events"),
+							MinHealthyTime:  pointer.Of(12 * time.Hour),
+							HealthyDeadline: pointer.Of(12 * time.Hour),
+						},
+						Spreads: []*api.Spread{
+							{
+								Attribute: "${node.datacenter}",
+								Weight:    pointer.Of(int8(100)),
+								SpreadTarget: []*api.SpreadTarget{
+									{
+										Value:   "dc1",
+										Percent: 100,
+									},
+								},
+							},
+						},
+						EphemeralDisk: &api.EphemeralDisk{
+							SizeMB:  pointer.Of(100),
+							Sticky:  pointer.Of(true),
+							Migrate: pointer.Of(true),
+						},
+						Update: &api.UpdateStrategy{
+							HealthCheck:      pointer.Of(structs.UpdateStrategyHealthCheck_Checks),
+							MinHealthyTime:   pointer.Of(2 * time.Minute),
+							HealthyDeadline:  pointer.Of(5 * time.Minute),
+							ProgressDeadline: pointer.Of(5 * time.Minute),
+							AutoRevert:       pointer.Of(true),
+						},
+						Meta: map[string]string{
+							"key": "value",
+						},
+						Consul: &api.Consul{
+							Namespace: "team-foo",
+						},
 						Services: []*api.Service{
 							{
-								Name:              "serviceA",
-								Tags:              []string{"1", "2"},
-								CanaryTags:        []string{"3", "4"},
+								Name:              "groupserviceA",
+								Tags:              []string{"a", "b"},
+								CanaryTags:        []string{"d", "e"},
 								EnableTagOverride: true,
-								PortLabel:         "foo",
-								Address:           "task.example.com",
+								PortLabel:         "1234",
+								Address:           "group.example.com",
 								Meta: map[string]string{
 									"servicemeta": "foobar",
+								},
+								TaggedAddresses: map[string]string{
+									"wan": "1.2.3.4",
 								},
 								CheckRestart: &api.CheckRestart{
 									Limit: 4,
@@ -2821,377 +2722,342 @@ func TestJobs_ApiJobToStructsJob(t *testing.T) {
 								},
 								Checks: []api.ServiceCheck{
 									{
-										Name:                   "bar",
-										Type:                   "http",
-										Command:                "foo",
-										Args:                   []string{"a", "b"},
-										Path:                   "/check",
-										Protocol:               "http",
-										PortLabel:              "foo",
-										AddressMode:            "driver",
-										GRPCService:            "foo.Bar",
-										GRPCUseTLS:             true,
-										Interval:               4 * time.Second,
-										Timeout:                2 * time.Second,
-										InitialStatus:          "ok",
-										SuccessBeforePassing:   3,
-										FailuresBeforeCritical: 4,
+										Name:          "bar",
+										Type:          "http",
+										Command:       "foo",
+										Args:          []string{"a", "b"},
+										Path:          "/check",
+										Protocol:      "http",
+										Method:        http.MethodPost,
+										Body:          "{\"check\":\"mem\"}",
+										PortLabel:     "foo",
+										AddressMode:   "driver",
+										GRPCService:   "foo.Bar",
+										GRPCUseTLS:    true,
+										Interval:      4 * time.Second,
+										Timeout:       2 * time.Second,
+										InitialStatus: "ok",
 										CheckRestart: &api.CheckRestart{
 											Limit:          3,
 											IgnoreWarnings: true,
 										},
+										TaskName:               "task1",
+										SuccessBeforePassing:   2,
+										FailuresBeforeCritical: 3,
 									},
+								},
+								Connect: &api.ConsulConnect{
+									Native: false,
+									SidecarService: &api.ConsulSidecarService{
+										Tags:                   []string{"f", "g"},
+										Port:                   "9000",
+										DisableDefaultTCPCheck: true,
+										Meta: map[string]string{
+											"test-key": "test-value",
+										},
+									},
+								},
+							},
+						},
+						MaxClientDisconnect: pointer.Of(30 * time.Second),
+						Tasks: []*api.Task{
+							{
+								Name:   "task1",
+								Leader: true,
+								Driver: "docker",
+								User:   "mary",
+								Config: map[string]interface{}{
+									"lol": "code",
+								},
+								Env: map[string]string{
+									"hello": "world",
+								},
+								Constraints: []*api.Constraint{
 									{
-										Name:      "check2",
-										Type:      "tcp",
-										PortLabel: "foo",
-										Interval:  4 * time.Second,
-										Timeout:   2 * time.Second,
+										LTarget: "x",
+										RTarget: "y",
+										Operand: "z",
 									},
 								},
-							},
-						},
-						Resources: &api.Resources{
-							CPU:      pointer.Of(100),
-							MemoryMB: pointer.Of(10),
-							Networks: []*api.NetworkResource{
-								{
-									IP:       "10.10.11.1",
-									MBits:    pointer.Of(10),
-									Hostname: "foobar",
-									ReservedPorts: []api.Port{
-										{
-											Label: "http",
-											Value: 80,
+								Affinities: []*api.Affinity{
+									{
+										LTarget: "a",
+										RTarget: "b",
+										Operand: "c",
+										Weight:  pointer.Of(int8(50)),
+									},
+								},
+								Identities: []*api.WorkloadIdentity{
+									{
+										Name:         "aws",
+										Audience:     []string{"s3"},
+										Env:          true,
+										File:         true,
+										ChangeMode:   "signal",
+										ChangeSignal: "SIGHUP",
+									},
+								},
+								VolumeMounts: []*api.VolumeMount{
+									{
+										Volume:          pointer.Of("vol"),
+										Destination:     pointer.Of("dest"),
+										ReadOnly:        pointer.Of(false),
+										PropagationMode: pointer.Of("a"),
+									},
+								},
+								RestartPolicy: &api.RestartPolicy{
+									Interval:        pointer.Of(2 * time.Second),
+									Attempts:        pointer.Of(10),
+									Delay:           pointer.Of(20 * time.Second),
+									Mode:            pointer.Of("delay"),
+									RenderTemplates: pointer.Of(false),
+								},
+								Services: []*api.Service{
+									{
+										Name:              "serviceA",
+										Tags:              []string{"1", "2"},
+										CanaryTags:        []string{"3", "4"},
+										EnableTagOverride: true,
+										PortLabel:         "foo",
+										Address:           "task.example.com",
+										Meta: map[string]string{
+											"servicemeta": "foobar",
+										},
+										CheckRestart: &api.CheckRestart{
+											Limit: 4,
+											Grace: pointer.Of(11 * time.Second),
+										},
+										Checks: []api.ServiceCheck{
+											{
+												Name:                   "bar",
+												Type:                   "http",
+												Command:                "foo",
+												Args:                   []string{"a", "b"},
+												Path:                   "/check",
+												Protocol:               "http",
+												PortLabel:              "foo",
+												AddressMode:            "driver",
+												GRPCService:            "foo.Bar",
+												GRPCUseTLS:             true,
+												Interval:               4 * time.Second,
+												Timeout:                2 * time.Second,
+												InitialStatus:          "ok",
+												SuccessBeforePassing:   3,
+												FailuresBeforeCritical: 4,
+												CheckRestart: &api.CheckRestart{
+													Limit:          3,
+													IgnoreWarnings: true,
+												},
+											},
+											{
+												Name:      "check2",
+												Type:      "tcp",
+												PortLabel: "foo",
+												Interval:  4 * time.Second,
+												Timeout:   2 * time.Second,
+											},
 										},
 									},
-									DynamicPorts: []api.Port{
+								},
+								Resources: &api.Resources{
+									CPU:      pointer.Of(100),
+									MemoryMB: pointer.Of(10),
+									Networks: []*api.NetworkResource{
 										{
-											Label: "ssh",
-											Value: 2000,
+											IP:       "10.10.11.1",
+											MBits:    pointer.Of(10),
+											Hostname: "foobar",
+											ReservedPorts: []api.Port{
+												{
+													Label: "http",
+													Value: 80,
+												},
+											},
+											DynamicPorts: []api.Port{
+												{
+													Label: "ssh",
+													Value: 2000,
+												},
+											},
+										},
+									},
+									Devices: []*api.RequestedDevice{
+										{
+											Name:  "nvidia/gpu",
+											Count: pointer.Of(uint64(4)),
+											Constraints: []*api.Constraint{
+												{
+													LTarget: "x",
+													RTarget: "y",
+													Operand: "z",
+												},
+											},
+											Affinities: []*api.Affinity{
+												{
+													LTarget: "a",
+													RTarget: "b",
+													Operand: "c",
+													Weight:  pointer.Of(int8(50)),
+												},
+											},
+										},
+										{
+											Name:  "gpu",
+											Count: nil,
 										},
 									},
 								},
-							},
-							Devices: []*api.RequestedDevice{
-								{
-									Name:  "nvidia/gpu",
-									Count: pointer.Of(uint64(4)),
-									Constraints: []*api.Constraint{
-										{
-											LTarget: "x",
-											RTarget: "y",
-											Operand: "z",
+								Meta: map[string]string{
+									"lol": "code",
+								},
+								KillTimeout: pointer.Of(10 * time.Second),
+								KillSignal:  "SIGQUIT",
+								LogConfig: &api.LogConfig{
+									Disabled:      pointer.Of(true),
+									MaxFiles:      pointer.Of(10),
+									MaxFileSizeMB: pointer.Of(100),
+								},
+								Artifacts: []*api.TaskArtifact{
+									{
+										GetterSource: pointer.Of("source"),
+										GetterOptions: map[string]string{
+											"a": "b",
 										},
+										GetterMode:   pointer.Of("dir"),
+										RelativeDest: pointer.Of("dest"),
 									},
-									Affinities: []*api.Affinity{
-										{
-											LTarget: "a",
-											RTarget: "b",
-											Operand: "c",
-											Weight:  pointer.Of(int8(50)),
+								},
+								Vault: &api.Vault{
+									Role:         "nomad-task",
+									Namespace:    pointer.Of("ns1"),
+									Policies:     []string{"a", "b", "c"},
+									Env:          pointer.Of(true),
+									DisableFile:  pointer.Of(false),
+									ChangeMode:   pointer.Of("c"),
+									ChangeSignal: pointer.Of("sighup"),
+								},
+								Templates: []*api.Template{
+									{
+										SourcePath:   pointer.Of("source"),
+										DestPath:     pointer.Of("dest"),
+										EmbeddedTmpl: pointer.Of("embedded"),
+										ChangeMode:   pointer.Of("change"),
+										ChangeSignal: pointer.Of("signal"),
+										ChangeScript: &api.ChangeScript{
+											Command:     pointer.Of("/bin/foo"),
+											Args:        []string{"-h"},
+											Timeout:     pointer.Of(5 * time.Second),
+											FailOnError: pointer.Of(false),
 										},
+										Splay:      pointer.Of(1 * time.Minute),
+										Perms:      pointer.Of("666"),
+										Uid:        pointer.Of(1000),
+										Gid:        pointer.Of(1000),
+										LeftDelim:  pointer.Of("abc"),
+										RightDelim: pointer.Of("def"),
+										Envvars:    pointer.Of(true),
+										Wait: &api.WaitConfig{
+											Min: pointer.Of(5 * time.Second),
+											Max: pointer.Of(10 * time.Second),
+										},
+										ErrMissingKey: pointer.Of(true),
 									},
 								},
-								{
-									Name:  "gpu",
-									Count: nil,
+								DispatchPayload: &api.DispatchPayloadConfig{
+									File: "fileA",
 								},
 							},
-						},
-						Meta: map[string]string{
-							"lol": "code",
-						},
-						KillTimeout: pointer.Of(10 * time.Second),
-						KillSignal:  "SIGQUIT",
-						LogConfig: &api.LogConfig{
-							Disabled:      pointer.Of(true),
-							MaxFiles:      pointer.Of(10),
-							MaxFileSizeMB: pointer.Of(100),
-						},
-						Artifacts: []*api.TaskArtifact{
-							{
-								GetterSource: pointer.Of("source"),
-								GetterOptions: map[string]string{
-									"a": "b",
-								},
-								GetterMode:   pointer.Of("dir"),
-								RelativeDest: pointer.Of("dest"),
-							},
-						},
-						Vault: &api.Vault{
-							Role:         "nomad-task",
-							Namespace:    pointer.Of("ns1"),
-							Policies:     []string{"a", "b", "c"},
-							Env:          pointer.Of(true),
-							DisableFile:  pointer.Of(false),
-							ChangeMode:   pointer.Of("c"),
-							ChangeSignal: pointer.Of("sighup"),
-						},
-						Templates: []*api.Template{
-							{
-								SourcePath:   pointer.Of("source"),
-								DestPath:     pointer.Of("dest"),
-								EmbeddedTmpl: pointer.Of("embedded"),
-								ChangeMode:   pointer.Of("change"),
-								ChangeSignal: pointer.Of("signal"),
-								ChangeScript: &api.ChangeScript{
-									Command:     pointer.Of("/bin/foo"),
-									Args:        []string{"-h"},
-									Timeout:     pointer.Of(5 * time.Second),
-									FailOnError: pointer.Of(false),
-								},
-								Splay:      pointer.Of(1 * time.Minute),
-								Perms:      pointer.Of("666"),
-								Uid:        pointer.Of(1000),
-								Gid:        pointer.Of(1000),
-								LeftDelim:  pointer.Of("abc"),
-								RightDelim: pointer.Of("def"),
-								Envvars:    pointer.Of(true),
-								Wait: &api.WaitConfig{
-									Min: pointer.Of(5 * time.Second),
-									Max: pointer.Of(10 * time.Second),
-								},
-								ErrMissingKey: pointer.Of(true),
-							},
-						},
-						DispatchPayload: &api.DispatchPayloadConfig{
-							File: "fileA",
 						},
 					},
 				},
+				ConsulToken:       pointer.Of("abc123"),
+				VaultToken:        pointer.Of("def456"),
+				VaultNamespace:    pointer.Of("ghi789"),
+				Status:            pointer.Of("status"),
+				StatusDescription: pointer.Of("status_desc"),
+				Version:           pointer.Of(uint64(10)),
+				CreateIndex:       pointer.Of(uint64(1)),
+				ModifyIndex:       pointer.Of(uint64(3)),
+				JobModifyIndex:    pointer.Of(uint64(5)),
 			},
-		},
-		ConsulToken:       pointer.Of("abc123"),
-		VaultToken:        pointer.Of("def456"),
-		VaultNamespace:    pointer.Of("ghi789"),
-		Status:            pointer.Of("status"),
-		StatusDescription: pointer.Of("status_desc"),
-		Version:           pointer.Of(uint64(10)),
-		CreateIndex:       pointer.Of(uint64(1)),
-		ModifyIndex:       pointer.Of(uint64(3)),
-		JobModifyIndex:    pointer.Of(uint64(5)),
-	}
-
-	expected := &structs.Job{
-		Stop:           true,
-		Region:         "global",
-		Namespace:      "foo",
-		VaultNamespace: "ghi789",
-		ID:             "foo",
-		Name:           "name",
-		Type:           "service",
-		Priority:       50,
-		AllAtOnce:      true,
-		Datacenters:    []string{"dc1", "dc2"},
-		NodePool:       "",
-		Constraints: []*structs.Constraint{
-			{
-				LTarget: "a",
-				RTarget: "b",
-				Operand: "c",
-			},
-		},
-		Affinities: []*structs.Affinity{
-			{
-				LTarget: "a",
-				RTarget: "b",
-				Operand: "c",
-				Weight:  50,
-			},
-		},
-		Spreads: []*structs.Spread{
-			{
-				Attribute: "${meta.rack}",
-				Weight:    100,
-				SpreadTarget: []*structs.SpreadTarget{
-					{
-						Value:   "r1",
-						Percent: 50,
-					},
-				},
-			},
-		},
-		Update: structs.UpdateStrategy{
-			Stagger:     1 * time.Second,
-			MaxParallel: 5,
-		},
-		Periodic: &structs.PeriodicConfig{
-			Enabled:         true,
-			Spec:            "spec",
-			Specs:           []string{"spec"},
-			SpecType:        "cron",
-			ProhibitOverlap: true,
-			TimeZone:        "test zone",
-		},
-		ParameterizedJob: &structs.ParameterizedJobConfig{
-			Payload:      "payload",
-			MetaRequired: []string{"a", "b"},
-			MetaOptional: []string{"c", "d"},
-		},
-		Payload: []byte("payload"),
-		Meta: map[string]string{
-			"foo": "bar",
-		},
-		Multiregion: &structs.Multiregion{
-			Strategy: &structs.MultiregionStrategy{
-				MaxParallel: 2,
-				OnFailure:   "fail_all",
-			},
-			Regions: []*structs.MultiregionRegion{
-				{
-					Name:        "west",
-					Count:       1,
-					Datacenters: []string{"dc1", "dc2"},
-					Meta:        map[string]string{"region_code": "W"},
-				},
-			},
-		},
-		TaskGroups: []*structs.TaskGroup{
-			{
-				Name:  "group1",
-				Count: 5,
+			expectedStructJob: &structs.Job{
+				Stop:           true,
+				Region:         "global",
+				Namespace:      "foo",
+				VaultNamespace: "ghi789",
+				ID:             "foo",
+				Name:           "name",
+				Type:           "service",
+				Priority:       50,
+				AllAtOnce:      true,
+				Datacenters:    []string{"dc1", "dc2"},
+				NodePool:       "",
 				Constraints: []*structs.Constraint{
 					{
-						LTarget: "x",
-						RTarget: "y",
-						Operand: "z",
+						LTarget: "a",
+						RTarget: "b",
+						Operand: "c",
 					},
 				},
-				RescheduleOnLost: true,
 				Affinities: []*structs.Affinity{
 					{
-						LTarget: "x",
-						RTarget: "y",
-						Operand: "z",
-						Weight:  100,
+						LTarget: "a",
+						RTarget: "b",
+						Operand: "c",
+						Weight:  50,
 					},
-				},
-				RestartPolicy: &structs.RestartPolicy{
-					Interval:        1 * time.Second,
-					Attempts:        5,
-					Delay:           10 * time.Second,
-					Mode:            "delay",
-					RenderTemplates: false,
 				},
 				Spreads: []*structs.Spread{
 					{
-						Attribute: "${node.datacenter}",
+						Attribute: "${meta.rack}",
 						Weight:    100,
 						SpreadTarget: []*structs.SpreadTarget{
 							{
-								Value:   "dc1",
-								Percent: 100,
+								Value:   "r1",
+								Percent: 50,
 							},
 						},
 					},
 				},
-				ReschedulePolicy: &structs.ReschedulePolicy{
-					Interval:      12 * time.Hour,
-					Attempts:      5,
-					DelayFunction: "constant",
-					Delay:         30 * time.Second,
-					Unlimited:     true,
-					MaxDelay:      20 * time.Minute,
+				Update: structs.UpdateStrategy{
+					Stagger:     1 * time.Second,
+					MaxParallel: 5,
 				},
-				Migrate: &structs.MigrateStrategy{
-					MaxParallel:     12,
-					HealthCheck:     "task_events",
-					MinHealthyTime:  12 * time.Hour,
-					HealthyDeadline: 12 * time.Hour,
+				Periodic: &structs.PeriodicConfig{
+					Enabled:         true,
+					Spec:            "spec",
+					Specs:           []string{"spec"},
+					SpecType:        "cron",
+					ProhibitOverlap: true,
+					TimeZone:        "test zone",
 				},
-				EphemeralDisk: &structs.EphemeralDisk{
-					SizeMB:  100,
-					Sticky:  true,
-					Migrate: true,
+				ParameterizedJob: &structs.ParameterizedJobConfig{
+					Payload:      "payload",
+					MetaRequired: []string{"a", "b"},
+					MetaOptional: []string{"c", "d"},
 				},
-				Update: &structs.UpdateStrategy{
-					Stagger:          1 * time.Second,
-					MaxParallel:      5,
-					HealthCheck:      structs.UpdateStrategyHealthCheck_Checks,
-					MinHealthyTime:   2 * time.Minute,
-					HealthyDeadline:  5 * time.Minute,
-					ProgressDeadline: 5 * time.Minute,
-					AutoRevert:       true,
-					AutoPromote:      false,
-					Canary:           1,
-				},
+				Payload: []byte("payload"),
 				Meta: map[string]string{
-					"key": "value",
+					"foo": "bar",
 				},
-				Consul: &structs.Consul{
-					Namespace: "team-foo",
-					Cluster:   structs.ConsulDefaultCluster,
-				},
-				Services: []*structs.Service{
-					{
-						Name:              "groupserviceA",
-						Provider:          "consul",
-						Cluster:           structs.ConsulDefaultCluster,
-						Tags:              []string{"a", "b"},
-						CanaryTags:        []string{"d", "e"},
-						EnableTagOverride: true,
-						PortLabel:         "1234",
-						AddressMode:       "auto",
-						Address:           "group.example.com",
-						Meta: map[string]string{
-							"servicemeta": "foobar",
-						},
-						TaggedAddresses: map[string]string{
-							"wan": "1.2.3.4",
-						},
-						OnUpdate: structs.OnUpdateRequireHealthy,
-						Checks: []*structs.ServiceCheck{
-							{
-								Name:          "bar",
-								Type:          "http",
-								Command:       "foo",
-								Args:          []string{"a", "b"},
-								Path:          "/check",
-								Protocol:      "http",
-								Method:        http.MethodPost,
-								Body:          "{\"check\":\"mem\"}",
-								PortLabel:     "foo",
-								AddressMode:   "driver",
-								GRPCService:   "foo.Bar",
-								GRPCUseTLS:    true,
-								Interval:      4 * time.Second,
-								Timeout:       2 * time.Second,
-								InitialStatus: "ok",
-								CheckRestart: &structs.CheckRestart{
-									Grace:          11 * time.Second,
-									Limit:          3,
-									IgnoreWarnings: true,
-								},
-								TaskName:               "task1",
-								OnUpdate:               structs.OnUpdateRequireHealthy,
-								SuccessBeforePassing:   2,
-								FailuresBeforeCritical: 3,
-							},
-						},
-						Connect: &structs.ConsulConnect{
-							Native: false,
-							SidecarService: &structs.ConsulSidecarService{
-								Tags:                   []string{"f", "g"},
-								Port:                   "9000",
-								DisableDefaultTCPCheck: true,
-								Meta: map[string]string{
-									"test-key": "test-value",
-								},
-							},
+				Multiregion: &structs.Multiregion{
+					Strategy: &structs.MultiregionStrategy{
+						MaxParallel: 2,
+						OnFailure:   "fail_all",
+					},
+					Regions: []*structs.MultiregionRegion{
+						{
+							Name:        "west",
+							Count:       1,
+							Datacenters: []string{"dc1", "dc2"},
+							Meta:        map[string]string{"region_code": "W"},
 						},
 					},
 				},
-				MaxClientDisconnect: pointer.Of(30 * time.Second),
-				Tasks: []*structs.Task{
+				TaskGroups: []*structs.TaskGroup{
 					{
-						Name:   "task1",
-						Driver: "docker",
-						Leader: true,
-						User:   "mary",
-						Config: map[string]interface{}{
-							"lol": "code",
-						},
+						Name:  "group1",
+						Count: 5,
 						Constraints: []*structs.Constraint{
 							{
 								LTarget: "x",
@@ -3201,426 +3067,10 @@ func TestJobs_ApiJobToStructsJob(t *testing.T) {
 						},
 						Affinities: []*structs.Affinity{
 							{
-								LTarget: "a",
-								RTarget: "b",
-								Operand: "c",
-								Weight:  50,
-							},
-						},
-						Identities: []*structs.WorkloadIdentity{
-							{
-								Name:         "aws",
-								Audience:     []string{"s3"},
-								Env:          true,
-								File:         true,
-								ChangeMode:   "signal",
-								ChangeSignal: "SIGHUP",
-							},
-						},
-						Env: map[string]string{
-							"hello": "world",
-						},
-						VolumeMounts: []*structs.VolumeMount{
-							{
-								Volume:          "vol",
-								Destination:     "dest",
-								ReadOnly:        false,
-								PropagationMode: "a",
-							},
-						},
-						RestartPolicy: &structs.RestartPolicy{
-							Interval:        2 * time.Second,
-							Attempts:        10,
-							Delay:           20 * time.Second,
-							Mode:            "delay",
-							RenderTemplates: false,
-						},
-						Services: []*structs.Service{
-							{
-								Name:              "serviceA",
-								Provider:          "consul",
-								Cluster:           structs.ConsulDefaultCluster,
-								Tags:              []string{"1", "2"},
-								CanaryTags:        []string{"3", "4"},
-								EnableTagOverride: true,
-								PortLabel:         "foo",
-								AddressMode:       "auto",
-								Address:           "task.example.com",
-								Meta: map[string]string{
-									"servicemeta": "foobar",
-								},
-								OnUpdate: structs.OnUpdateRequireHealthy,
-								Checks: []*structs.ServiceCheck{
-									{
-										Name:                   "bar",
-										Type:                   "http",
-										Command:                "foo",
-										Args:                   []string{"a", "b"},
-										Path:                   "/check",
-										Protocol:               "http",
-										PortLabel:              "foo",
-										AddressMode:            "driver",
-										Interval:               4 * time.Second,
-										Timeout:                2 * time.Second,
-										InitialStatus:          "ok",
-										GRPCService:            "foo.Bar",
-										GRPCUseTLS:             true,
-										SuccessBeforePassing:   3,
-										FailuresBeforeCritical: 4,
-										CheckRestart: &structs.CheckRestart{
-											Limit:          3,
-											Grace:          11 * time.Second,
-											IgnoreWarnings: true,
-										},
-										OnUpdate: structs.OnUpdateRequireHealthy,
-									},
-									{
-										Name:      "check2",
-										Type:      "tcp",
-										PortLabel: "foo",
-										Interval:  4 * time.Second,
-										Timeout:   2 * time.Second,
-										CheckRestart: &structs.CheckRestart{
-											Limit: 4,
-											Grace: 11 * time.Second,
-										},
-										OnUpdate: structs.OnUpdateRequireHealthy,
-									},
-								},
-							},
-						},
-						Resources: &structs.Resources{
-							CPU:      100,
-							MemoryMB: 10,
-							Networks: []*structs.NetworkResource{
-								{
-									IP:       "10.10.11.1",
-									MBits:    10,
-									Hostname: "foobar",
-									ReservedPorts: []structs.Port{
-										{
-											Label: "http",
-											Value: 80,
-										},
-									},
-									DynamicPorts: []structs.Port{
-										{
-											Label: "ssh",
-											Value: 2000,
-										},
-									},
-								},
-							},
-							Devices: []*structs.RequestedDevice{
-								{
-									Name:  "nvidia/gpu",
-									Count: 4,
-									Constraints: []*structs.Constraint{
-										{
-											LTarget: "x",
-											RTarget: "y",
-											Operand: "z",
-										},
-									},
-									Affinities: []*structs.Affinity{
-										{
-											LTarget: "a",
-											RTarget: "b",
-											Operand: "c",
-											Weight:  50,
-										},
-									},
-								},
-								{
-									Name:  "gpu",
-									Count: 1,
-								},
-							},
-						},
-						Meta: map[string]string{
-							"lol": "code",
-						},
-						KillTimeout: 10 * time.Second,
-						KillSignal:  "SIGQUIT",
-						LogConfig: &structs.LogConfig{
-							Disabled:      true,
-							MaxFiles:      10,
-							MaxFileSizeMB: 100,
-						},
-						Artifacts: []*structs.TaskArtifact{
-							{
-								GetterSource: "source",
-								GetterOptions: map[string]string{
-									"a": "b",
-								},
-								GetterMode:   "dir",
-								RelativeDest: "dest",
-							},
-						},
-						Vault: &structs.Vault{
-							Role:         "nomad-task",
-							Namespace:    "ns1",
-							Cluster:      structs.VaultDefaultCluster,
-							Policies:     []string{"a", "b", "c"},
-							Env:          true,
-							DisableFile:  false,
-							ChangeMode:   "c",
-							ChangeSignal: "sighup",
-						},
-						Templates: []*structs.Template{
-							{
-								SourcePath:   "source",
-								DestPath:     "dest",
-								EmbeddedTmpl: "embedded",
-								ChangeMode:   "change",
-								ChangeSignal: "SIGNAL",
-								ChangeScript: &structs.ChangeScript{
-									Command:     "/bin/foo",
-									Args:        []string{"-h"},
-									Timeout:     5 * time.Second,
-									FailOnError: false,
-								},
-								Splay:      1 * time.Minute,
-								Perms:      "666",
-								Uid:        pointer.Of(1000),
-								Gid:        pointer.Of(1000),
-								LeftDelim:  "abc",
-								RightDelim: "def",
-								Envvars:    true,
-								Wait: &structs.WaitConfig{
-									Min: pointer.Of(5 * time.Second),
-									Max: pointer.Of(10 * time.Second),
-								},
-								ErrMissingKey: true,
-							},
-						},
-						DispatchPayload: &structs.DispatchPayloadConfig{
-							File: "fileA",
-						},
-					},
-				},
-			},
-		},
-
-		ConsulToken: "abc123",
-		VaultToken:  "def456",
-	}
-
-	structsJob := ApiJobToStructJob(apiJob)
-
-	require.Equal(t, expected, structsJob)
-
-	systemAPIJob := &api.Job{
-		Stop:        pointer.Of(true),
-		Region:      pointer.Of("global"),
-		Namespace:   pointer.Of("foo"),
-		ID:          pointer.Of("foo"),
-		ParentID:    pointer.Of("lol"),
-		Name:        pointer.Of("name"),
-		Type:        pointer.Of("system"),
-		Priority:    pointer.Of(50),
-		AllAtOnce:   pointer.Of(true),
-		Datacenters: []string{"dc1", "dc2"},
-		NodePool:    pointer.Of("default"),
-		Constraints: []*api.Constraint{
-			{
-				LTarget: "a",
-				RTarget: "b",
-				Operand: "c",
-			},
-		},
-		TaskGroups: []*api.TaskGroup{
-			{
-				Name:  pointer.Of("group1"),
-				Count: pointer.Of(5),
-				Constraints: []*api.Constraint{
-					{
-						LTarget: "x",
-						RTarget: "y",
-						Operand: "z",
-					},
-				},
-				RestartPolicy: &api.RestartPolicy{
-					Interval:        pointer.Of(1 * time.Second),
-					Attempts:        pointer.Of(5),
-					Delay:           pointer.Of(10 * time.Second),
-					Mode:            pointer.Of("delay"),
-					RenderTemplates: pointer.Of(false),
-				},
-				EphemeralDisk: &api.EphemeralDisk{
-					SizeMB:  pointer.Of(100),
-					Sticky:  pointer.Of(true),
-					Migrate: pointer.Of(true),
-				},
-				Meta: map[string]string{
-					"key": "value",
-				},
-				Consul: &api.Consul{
-					Namespace: "foo",
-				},
-				Tasks: []*api.Task{
-					{
-						Name:   "task1",
-						Leader: true,
-						Driver: "docker",
-						User:   "mary",
-						Config: map[string]interface{}{
-							"lol": "code",
-						},
-						Env: map[string]string{
-							"hello": "world",
-						},
-						Constraints: []*api.Constraint{
-							{
 								LTarget: "x",
 								RTarget: "y",
 								Operand: "z",
-							},
-						},
-						Resources: &api.Resources{
-							CPU:      pointer.Of(100),
-							MemoryMB: pointer.Of(10),
-							Networks: []*api.NetworkResource{
-								{
-									IP:    "10.10.11.1",
-									MBits: pointer.Of(10),
-									ReservedPorts: []api.Port{
-										{
-											Label: "http",
-											Value: 80,
-										},
-									},
-									DynamicPorts: []api.Port{
-										{
-											Label: "ssh",
-											Value: 2000,
-										},
-									},
-								},
-							},
-						},
-						Meta: map[string]string{
-							"lol": "code",
-						},
-						KillTimeout: pointer.Of(10 * time.Second),
-						KillSignal:  "SIGQUIT",
-						LogConfig: &api.LogConfig{
-							Disabled:      pointer.Of(true),
-							MaxFiles:      pointer.Of(10),
-							MaxFileSizeMB: pointer.Of(100),
-						},
-						Artifacts: []*api.TaskArtifact{
-							{
-								GetterSource:  pointer.Of("source"),
-								GetterOptions: map[string]string{"a": "b"},
-								GetterHeaders: map[string]string{"User-Agent": "nomad"},
-								GetterMode:    pointer.Of("dir"),
-								RelativeDest:  pointer.Of("dest"),
-							},
-						},
-						DispatchPayload: &api.DispatchPayloadConfig{
-							File: "fileA",
-						},
-					},
-				},
-			},
-		},
-		Status:            pointer.Of("status"),
-		StatusDescription: pointer.Of("status_desc"),
-		Version:           pointer.Of(uint64(10)),
-		CreateIndex:       pointer.Of(uint64(1)),
-		ModifyIndex:       pointer.Of(uint64(3)),
-		JobModifyIndex:    pointer.Of(uint64(5)),
-	}
-
-	expectedSystemJob := &structs.Job{
-		Stop:        true,
-		Region:      "global",
-		Namespace:   "foo",
-		ID:          "foo",
-		Name:        "name",
-		Type:        "system",
-		Priority:    50,
-		AllAtOnce:   true,
-		Datacenters: []string{"dc1", "dc2"},
-		NodePool:    "default",
-		Constraints: []*structs.Constraint{
-			{
-				LTarget: "a",
-				RTarget: "b",
-				Operand: "c",
-			},
-		},
-		TaskGroups: []*structs.TaskGroup{
-			{
-				Name:             "group1",
-				Count:            5,
-				RescheduleOnLost: true,
-				Constraints: []*structs.Constraint{
-					{
-						LTarget: "x",
-						RTarget: "y",
-						Operand: "z",
-					},
-				},
-				RestartPolicy: &structs.RestartPolicy{
-					Interval:        1 * time.Second,
-					Attempts:        5,
-					Delay:           10 * time.Second,
-					Mode:            "delay",
-					RenderTemplates: false,
-				},
-				EphemeralDisk: &structs.EphemeralDisk{
-					SizeMB:  100,
-					Sticky:  true,
-					Migrate: true,
-				},
-				Meta: map[string]string{
-					"key": "value",
-				},
-				Consul: &structs.Consul{
-					Namespace: "foo",
-					Cluster:   structs.ConsulDefaultCluster,
-				},
-				Tasks: []*structs.Task{
-					{
-						Name:   "task1",
-						Driver: "docker",
-						Leader: true,
-						User:   "mary",
-						Config: map[string]interface{}{
-							"lol": "code",
-						},
-						Constraints: []*structs.Constraint{
-							{
-								LTarget: "x",
-								RTarget: "y",
-								Operand: "z",
-							},
-						},
-						Env: map[string]string{
-							"hello": "world",
-						},
-						Resources: &structs.Resources{
-							CPU:      100,
-							MemoryMB: 10,
-							Networks: []*structs.NetworkResource{
-								{
-									IP:    "10.10.11.1",
-									MBits: 10,
-									ReservedPorts: []structs.Port{
-										{
-											Label: "http",
-											Value: 80,
-										},
-									},
-									DynamicPorts: []structs.Port{
-										{
-											Label: "ssh",
-											Value: 2000,
-										},
-									},
-								},
+								Weight:  100,
 							},
 						},
 						RestartPolicy: &structs.RestartPolicy{
@@ -3630,27 +3080,582 @@ func TestJobs_ApiJobToStructsJob(t *testing.T) {
 							Mode:            "delay",
 							RenderTemplates: false,
 						},
-						Meta: map[string]string{
-							"lol": "code",
-						},
-						KillTimeout: 10 * time.Second,
-						KillSignal:  "SIGQUIT",
-						LogConfig: &structs.LogConfig{
-							Disabled:      true,
-							MaxFiles:      10,
-							MaxFileSizeMB: 100,
-						},
-						Artifacts: []*structs.TaskArtifact{
+						Spreads: []*structs.Spread{
 							{
-								GetterSource:  "source",
-								GetterOptions: map[string]string{"a": "b"},
-								GetterHeaders: map[string]string{"User-Agent": "nomad"},
-								GetterMode:    "dir",
-								RelativeDest:  "dest",
+								Attribute: "${node.datacenter}",
+								Weight:    100,
+								SpreadTarget: []*structs.SpreadTarget{
+									{
+										Value:   "dc1",
+										Percent: 100,
+									},
+								},
 							},
 						},
-						DispatchPayload: &structs.DispatchPayloadConfig{
-							File: "fileA",
+						ReschedulePolicy: &structs.ReschedulePolicy{
+							Interval:         12 * time.Hour,
+							Attempts:         5,
+							DelayFunction:    "constant",
+							Delay:            30 * time.Second,
+							Unlimited:        true,
+							MaxDelay:         20 * time.Minute,
+							RescheduleOnLost: false,
+						},
+						Migrate: &structs.MigrateStrategy{
+							MaxParallel:     12,
+							HealthCheck:     "task_events",
+							MinHealthyTime:  12 * time.Hour,
+							HealthyDeadline: 12 * time.Hour,
+						},
+						EphemeralDisk: &structs.EphemeralDisk{
+							SizeMB:  100,
+							Sticky:  true,
+							Migrate: true,
+						},
+						Update: &structs.UpdateStrategy{
+							Stagger:          1 * time.Second,
+							MaxParallel:      5,
+							HealthCheck:      structs.UpdateStrategyHealthCheck_Checks,
+							MinHealthyTime:   2 * time.Minute,
+							HealthyDeadline:  5 * time.Minute,
+							ProgressDeadline: 5 * time.Minute,
+							AutoRevert:       true,
+							AutoPromote:      false,
+							Canary:           1,
+						},
+						Meta: map[string]string{
+							"key": "value",
+						},
+						Consul: &structs.Consul{
+							Namespace: "team-foo",
+							Cluster:   structs.ConsulDefaultCluster,
+						},
+						Services: []*structs.Service{
+							{
+								Name:              "groupserviceA",
+								Provider:          "consul",
+								Cluster:           structs.ConsulDefaultCluster,
+								Tags:              []string{"a", "b"},
+								CanaryTags:        []string{"d", "e"},
+								EnableTagOverride: true,
+								PortLabel:         "1234",
+								AddressMode:       "auto",
+								Address:           "group.example.com",
+								Meta: map[string]string{
+									"servicemeta": "foobar",
+								},
+								TaggedAddresses: map[string]string{
+									"wan": "1.2.3.4",
+								},
+								OnUpdate: structs.OnUpdateRequireHealthy,
+								Checks: []*structs.ServiceCheck{
+									{
+										Name:          "bar",
+										Type:          "http",
+										Command:       "foo",
+										Args:          []string{"a", "b"},
+										Path:          "/check",
+										Protocol:      "http",
+										Method:        http.MethodPost,
+										Body:          "{\"check\":\"mem\"}",
+										PortLabel:     "foo",
+										AddressMode:   "driver",
+										GRPCService:   "foo.Bar",
+										GRPCUseTLS:    true,
+										Interval:      4 * time.Second,
+										Timeout:       2 * time.Second,
+										InitialStatus: "ok",
+										CheckRestart: &structs.CheckRestart{
+											Grace:          11 * time.Second,
+											Limit:          3,
+											IgnoreWarnings: true,
+										},
+										TaskName:               "task1",
+										OnUpdate:               structs.OnUpdateRequireHealthy,
+										SuccessBeforePassing:   2,
+										FailuresBeforeCritical: 3,
+									},
+								},
+								Connect: &structs.ConsulConnect{
+									Native: false,
+									SidecarService: &structs.ConsulSidecarService{
+										Tags:                   []string{"f", "g"},
+										Port:                   "9000",
+										DisableDefaultTCPCheck: true,
+										Meta: map[string]string{
+											"test-key": "test-value",
+										},
+									},
+								},
+							},
+						},
+						MaxClientDisconnect: pointer.Of(30 * time.Second),
+						Tasks: []*structs.Task{
+							{
+								Name:   "task1",
+								Driver: "docker",
+								Leader: true,
+								User:   "mary",
+								Config: map[string]interface{}{
+									"lol": "code",
+								},
+								Constraints: []*structs.Constraint{
+									{
+										LTarget: "x",
+										RTarget: "y",
+										Operand: "z",
+									},
+								},
+								Affinities: []*structs.Affinity{
+									{
+										LTarget: "a",
+										RTarget: "b",
+										Operand: "c",
+										Weight:  50,
+									},
+								},
+								Identities: []*structs.WorkloadIdentity{
+									{
+										Name:         "aws",
+										Audience:     []string{"s3"},
+										Env:          true,
+										File:         true,
+										ChangeMode:   "signal",
+										ChangeSignal: "SIGHUP",
+									},
+								},
+								Env: map[string]string{
+									"hello": "world",
+								},
+								VolumeMounts: []*structs.VolumeMount{
+									{
+										Volume:          "vol",
+										Destination:     "dest",
+										ReadOnly:        false,
+										PropagationMode: "a",
+									},
+								},
+								RestartPolicy: &structs.RestartPolicy{
+									Interval:        2 * time.Second,
+									Attempts:        10,
+									Delay:           20 * time.Second,
+									Mode:            "delay",
+									RenderTemplates: false,
+								},
+								Services: []*structs.Service{
+									{
+										Name:              "serviceA",
+										Provider:          "consul",
+										Cluster:           structs.ConsulDefaultCluster,
+										Tags:              []string{"1", "2"},
+										CanaryTags:        []string{"3", "4"},
+										EnableTagOverride: true,
+										PortLabel:         "foo",
+										AddressMode:       "auto",
+										Address:           "task.example.com",
+										Meta: map[string]string{
+											"servicemeta": "foobar",
+										},
+										OnUpdate: structs.OnUpdateRequireHealthy,
+										Checks: []*structs.ServiceCheck{
+											{
+												Name:                   "bar",
+												Type:                   "http",
+												Command:                "foo",
+												Args:                   []string{"a", "b"},
+												Path:                   "/check",
+												Protocol:               "http",
+												PortLabel:              "foo",
+												AddressMode:            "driver",
+												Interval:               4 * time.Second,
+												Timeout:                2 * time.Second,
+												InitialStatus:          "ok",
+												GRPCService:            "foo.Bar",
+												GRPCUseTLS:             true,
+												SuccessBeforePassing:   3,
+												FailuresBeforeCritical: 4,
+												CheckRestart: &structs.CheckRestart{
+													Limit:          3,
+													Grace:          11 * time.Second,
+													IgnoreWarnings: true,
+												},
+												OnUpdate: structs.OnUpdateRequireHealthy,
+											},
+											{
+												Name:      "check2",
+												Type:      "tcp",
+												PortLabel: "foo",
+												Interval:  4 * time.Second,
+												Timeout:   2 * time.Second,
+												CheckRestart: &structs.CheckRestart{
+													Limit: 4,
+													Grace: 11 * time.Second,
+												},
+												OnUpdate: structs.OnUpdateRequireHealthy,
+											},
+										},
+									},
+								},
+								Resources: &structs.Resources{
+									CPU:      100,
+									MemoryMB: 10,
+									Networks: []*structs.NetworkResource{
+										{
+											IP:       "10.10.11.1",
+											MBits:    10,
+											Hostname: "foobar",
+											ReservedPorts: []structs.Port{
+												{
+													Label: "http",
+													Value: 80,
+												},
+											},
+											DynamicPorts: []structs.Port{
+												{
+													Label: "ssh",
+													Value: 2000,
+												},
+											},
+										},
+									},
+									Devices: []*structs.RequestedDevice{
+										{
+											Name:  "nvidia/gpu",
+											Count: 4,
+											Constraints: []*structs.Constraint{
+												{
+													LTarget: "x",
+													RTarget: "y",
+													Operand: "z",
+												},
+											},
+											Affinities: []*structs.Affinity{
+												{
+													LTarget: "a",
+													RTarget: "b",
+													Operand: "c",
+													Weight:  50,
+												},
+											},
+										},
+										{
+											Name:  "gpu",
+											Count: 1,
+										},
+									},
+								},
+								Meta: map[string]string{
+									"lol": "code",
+								},
+								KillTimeout: 10 * time.Second,
+								KillSignal:  "SIGQUIT",
+								LogConfig: &structs.LogConfig{
+									Disabled:      true,
+									MaxFiles:      10,
+									MaxFileSizeMB: 100,
+								},
+								Artifacts: []*structs.TaskArtifact{
+									{
+										GetterSource: "source",
+										GetterOptions: map[string]string{
+											"a": "b",
+										},
+										GetterMode:   "dir",
+										RelativeDest: "dest",
+									},
+								},
+								Vault: &structs.Vault{
+									Role:         "nomad-task",
+									Namespace:    "ns1",
+									Cluster:      structs.VaultDefaultCluster,
+									Policies:     []string{"a", "b", "c"},
+									Env:          true,
+									DisableFile:  false,
+									ChangeMode:   "c",
+									ChangeSignal: "sighup",
+								},
+								Templates: []*structs.Template{
+									{
+										SourcePath:   "source",
+										DestPath:     "dest",
+										EmbeddedTmpl: "embedded",
+										ChangeMode:   "change",
+										ChangeSignal: "SIGNAL",
+										ChangeScript: &structs.ChangeScript{
+											Command:     "/bin/foo",
+											Args:        []string{"-h"},
+											Timeout:     5 * time.Second,
+											FailOnError: false,
+										},
+										Splay:      1 * time.Minute,
+										Perms:      "666",
+										Uid:        pointer.Of(1000),
+										Gid:        pointer.Of(1000),
+										LeftDelim:  "abc",
+										RightDelim: "def",
+										Envvars:    true,
+										Wait: &structs.WaitConfig{
+											Min: pointer.Of(5 * time.Second),
+											Max: pointer.Of(10 * time.Second),
+										},
+										ErrMissingKey: true,
+									},
+								},
+								DispatchPayload: &structs.DispatchPayloadConfig{
+									File: "fileA",
+								},
+							},
+						},
+					},
+				},
+
+				ConsulToken: "abc123",
+				VaultToken:  "def456",
+			},
+		},
+		{
+			name: "system-job",
+			apiJob: &api.Job{
+				Stop:        pointer.Of(true),
+				Region:      pointer.Of("global"),
+				Namespace:   pointer.Of("foo"),
+				ID:          pointer.Of("foo"),
+				ParentID:    pointer.Of("lol"),
+				Name:        pointer.Of("name"),
+				Type:        pointer.Of("system"),
+				Priority:    pointer.Of(50),
+				AllAtOnce:   pointer.Of(true),
+				Datacenters: []string{"dc1", "dc2"},
+				NodePool:    pointer.Of("default"),
+				Constraints: []*api.Constraint{
+					{
+						LTarget: "a",
+						RTarget: "b",
+						Operand: "c",
+					},
+				},
+				TaskGroups: []*api.TaskGroup{
+					{
+						Name:  pointer.Of("group1"),
+						Count: pointer.Of(5),
+						Constraints: []*api.Constraint{
+							{
+								LTarget: "x",
+								RTarget: "y",
+								Operand: "z",
+							},
+						},
+						RestartPolicy: &api.RestartPolicy{
+							Interval:        pointer.Of(1 * time.Second),
+							Attempts:        pointer.Of(5),
+							Delay:           pointer.Of(10 * time.Second),
+							Mode:            pointer.Of("delay"),
+							RenderTemplates: pointer.Of(false),
+						},
+						EphemeralDisk: &api.EphemeralDisk{
+							SizeMB:  pointer.Of(100),
+							Sticky:  pointer.Of(true),
+							Migrate: pointer.Of(true),
+						},
+						Meta: map[string]string{
+							"key": "value",
+						},
+						Consul: &api.Consul{
+							Namespace: "foo",
+						},
+						Tasks: []*api.Task{
+							{
+								Name:   "task1",
+								Leader: true,
+								Driver: "docker",
+								User:   "mary",
+								Config: map[string]interface{}{
+									"lol": "code",
+								},
+								Env: map[string]string{
+									"hello": "world",
+								},
+								Constraints: []*api.Constraint{
+									{
+										LTarget: "x",
+										RTarget: "y",
+										Operand: "z",
+									},
+								},
+								Resources: &api.Resources{
+									CPU:      pointer.Of(100),
+									MemoryMB: pointer.Of(10),
+									Networks: []*api.NetworkResource{
+										{
+											IP:    "10.10.11.1",
+											MBits: pointer.Of(10),
+											ReservedPorts: []api.Port{
+												{
+													Label: "http",
+													Value: 80,
+												},
+											},
+											DynamicPorts: []api.Port{
+												{
+													Label: "ssh",
+													Value: 2000,
+												},
+											},
+										},
+									},
+								},
+								Meta: map[string]string{
+									"lol": "code",
+								},
+								KillTimeout: pointer.Of(10 * time.Second),
+								KillSignal:  "SIGQUIT",
+								LogConfig: &api.LogConfig{
+									Disabled:      pointer.Of(true),
+									MaxFiles:      pointer.Of(10),
+									MaxFileSizeMB: pointer.Of(100),
+								},
+								Artifacts: []*api.TaskArtifact{
+									{
+										GetterSource:  pointer.Of("source"),
+										GetterOptions: map[string]string{"a": "b"},
+										GetterHeaders: map[string]string{"User-Agent": "nomad"},
+										GetterMode:    pointer.Of("dir"),
+										RelativeDest:  pointer.Of("dest"),
+									},
+								},
+								DispatchPayload: &api.DispatchPayloadConfig{
+									File: "fileA",
+								},
+							},
+						},
+					},
+				},
+				Status:            pointer.Of("status"),
+				StatusDescription: pointer.Of("status_desc"),
+				Version:           pointer.Of(uint64(10)),
+				CreateIndex:       pointer.Of(uint64(1)),
+				ModifyIndex:       pointer.Of(uint64(3)),
+				JobModifyIndex:    pointer.Of(uint64(5)),
+			},
+			expectedStructJob: &structs.Job{
+				Stop:        true,
+				Region:      "global",
+				Namespace:   "foo",
+				ID:          "foo",
+				Name:        "name",
+				Type:        "system",
+				Priority:    50,
+				AllAtOnce:   true,
+				Datacenters: []string{"dc1", "dc2"},
+				NodePool:    "default",
+				Constraints: []*structs.Constraint{
+					{
+						LTarget: "a",
+						RTarget: "b",
+						Operand: "c",
+					},
+				},
+				TaskGroups: []*structs.TaskGroup{
+					{
+						Name:  "group1",
+						Count: 5,
+						Constraints: []*structs.Constraint{
+							{
+								LTarget: "x",
+								RTarget: "y",
+								Operand: "z",
+							},
+						},
+						RestartPolicy: &structs.RestartPolicy{
+							Interval:        1 * time.Second,
+							Attempts:        5,
+							Delay:           10 * time.Second,
+							Mode:            "delay",
+							RenderTemplates: false,
+						},
+						EphemeralDisk: &structs.EphemeralDisk{
+							SizeMB:  100,
+							Sticky:  true,
+							Migrate: true,
+						},
+						Meta: map[string]string{
+							"key": "value",
+						},
+						Consul: &structs.Consul{
+							Namespace: "foo",
+							Cluster:   structs.ConsulDefaultCluster,
+						},
+						Tasks: []*structs.Task{
+							{
+								Name:   "task1",
+								Driver: "docker",
+								Leader: true,
+								User:   "mary",
+								Config: map[string]interface{}{
+									"lol": "code",
+								},
+								Constraints: []*structs.Constraint{
+									{
+										LTarget: "x",
+										RTarget: "y",
+										Operand: "z",
+									},
+								},
+								Env: map[string]string{
+									"hello": "world",
+								},
+								Resources: &structs.Resources{
+									CPU:      100,
+									MemoryMB: 10,
+									Networks: []*structs.NetworkResource{
+										{
+											IP:    "10.10.11.1",
+											MBits: 10,
+											ReservedPorts: []structs.Port{
+												{
+													Label: "http",
+													Value: 80,
+												},
+											},
+											DynamicPorts: []structs.Port{
+												{
+													Label: "ssh",
+													Value: 2000,
+												},
+											},
+										},
+									},
+								},
+								RestartPolicy: &structs.RestartPolicy{
+									Interval:        1 * time.Second,
+									Attempts:        5,
+									Delay:           10 * time.Second,
+									Mode:            "delay",
+									RenderTemplates: false,
+								},
+								Meta: map[string]string{
+									"lol": "code",
+								},
+								KillTimeout: 10 * time.Second,
+								KillSignal:  "SIGQUIT",
+								LogConfig: &structs.LogConfig{
+									Disabled:      true,
+									MaxFiles:      10,
+									MaxFileSizeMB: 100,
+								},
+								Artifacts: []*structs.TaskArtifact{
+									{
+										GetterSource:  "source",
+										GetterOptions: map[string]string{"a": "b"},
+										GetterHeaders: map[string]string{"User-Agent": "nomad"},
+										GetterMode:    "dir",
+										RelativeDest:  "dest",
+									},
+								},
+								DispatchPayload: &structs.DispatchPayloadConfig{
+									File: "fileA",
+								},
+							},
 						},
 					},
 				},
@@ -3658,8 +3663,12 @@ func TestJobs_ApiJobToStructsJob(t *testing.T) {
 		},
 	}
 
-	systemStructsJob := ApiJobToStructJob(systemAPIJob)
-	require.Equal(t, expectedSystemJob, systemStructsJob)
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			result := ApiJobToStructJob(tc.apiJob)
+			must.Eq(t, tc.expectedStructJob, result)
+		})
+	}
 }
 
 func TestJobs_ApiJobToStructsJobUpdate(t *testing.T) {

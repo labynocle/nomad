@@ -640,7 +640,7 @@ func allocGCEligible(a *structs.Allocation, job *structs.Job, gcTime time.Time, 
 	}
 
 	// Don't GC lost allocs when RescheduleOnLost is disabled
-	if !job.Stop && !tg.RescheduleOnLost && a.ClientStatus == structs.AllocClientStatusLost {
+	if !job.Stop && !tg.ReschedulePolicy.RescheduleOnLost && a.ClientStatus == structs.AllocClientStatusLost {
 		return false
 	}
 

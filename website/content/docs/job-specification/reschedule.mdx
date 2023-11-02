@@ -81,6 +81,10 @@ they run on every node.
 - `unlimited` `(boolean:<varies>)` - `unlimited` enables unlimited reschedule attempts. If this is set to true
   the `attempts` and `interval` fields are not used.
 
+- `reschedule_on_lost` `(bool: true)` - Specifies if a groups tasks can be
+  rescheduled when their allocations become lost. If set to false, jobs with
+  lost tasks will be left in a running state until an operator intervenes.
+
 Information about reschedule attempts are displayed in the CLI and API for
 allocations. Rescheduling is enabled by default for service and batch jobs
 with the options shown below.
@@ -99,6 +103,7 @@ defaults by job type:
     unlimited      = false
     delay          = "5s"
     delay_function = "constant"
+    reschedule_on_lost = true
   }
   ```
 
@@ -110,6 +115,7 @@ defaults by job type:
    delay_function = "exponential"
    max_delay      = "1h"
    unlimited      = true
+  reschedule_on_lost = true
   }
   ```
 

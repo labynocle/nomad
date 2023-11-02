@@ -5920,16 +5920,18 @@ var (
 	// NewDefaultReschedulePolicy in api/tasks.go
 
 	DefaultServiceJobReschedulePolicy = ReschedulePolicy{
-		Delay:         30 * time.Second,
-		DelayFunction: "exponential",
-		MaxDelay:      1 * time.Hour,
-		Unlimited:     true,
+		Delay:            30 * time.Second,
+		DelayFunction:    "exponential",
+		MaxDelay:         1 * time.Hour,
+		Unlimited:        true,
+		RescheduleOnLost: true,
 	}
 	DefaultBatchJobReschedulePolicy = ReschedulePolicy{
-		Attempts:      1,
-		Interval:      24 * time.Hour,
-		Delay:         5 * time.Second,
-		DelayFunction: "constant",
+		Attempts:         1,
+		Interval:         24 * time.Hour,
+		Delay:            5 * time.Second,
+		DelayFunction:    "constant",
+		RescheduleOnLost: true,
 	}
 )
 
@@ -6320,6 +6322,10 @@ type ReschedulePolicy struct {
 	// Unlimited allows infinite rescheduling attempts. Only allowed when delay is set
 	// between reschedule attempts.
 	Unlimited bool
+
+	// RescheduleOnLost is used to control how allocations on lost
+	// nodes are handled, when true, such jobs are rescheduled.
+	RescheduleOnLost bool
 }
 
 func (r *ReschedulePolicy) Copy() *ReschedulePolicy {
@@ -6635,11 +6641,6 @@ type TaskGroup struct {
 	// MaxClientDisconnect, if set, configures the client to allow placed
 	// allocations for tasks in this group to attempt to resume running without a restart.
 	MaxClientDisconnect *time.Duration
-
-	// RescheduleOnLost is used to control how allocations on disconnected
-	// nodes are handled. For backwards compatibility, it defaults to true.
-	// When true, such jobs are rescheduled.
-	RescheduleOnLost bool
 }
 
 func (tg *TaskGroup) Copy() *TaskGroup {

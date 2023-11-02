@@ -441,7 +441,6 @@ func TestJobDiff(t *testing.T) {
 				},
 			},
 		},
-
 		{
 			// NodePool added
 			Old: &Job{},
@@ -510,7 +509,6 @@ func TestJobDiff(t *testing.T) {
 				Type: DiffTypeNone,
 			},
 		},
-
 		{
 			// Periodic added
 			Old: &Job{},
@@ -1253,38 +1251,32 @@ func TestJobDiff(t *testing.T) {
 			Old: &Job{
 				TaskGroups: []*TaskGroup{
 					{
-						Name:             "foo",
-						Count:            1,
-						RescheduleOnLost: true,
+						Name:  "foo",
+						Count: 1,
 					},
 					{
-						Name:             "bar",
-						Count:            1,
-						RescheduleOnLost: false,
+						Name:  "bar",
+						Count: 1,
 					},
 					{
-						Name:             "baz",
-						Count:            1,
-						RescheduleOnLost: true,
+						Name:  "baz",
+						Count: 1,
 					},
 				},
 			},
 			New: &Job{
 				TaskGroups: []*TaskGroup{
 					{
-						Name:             "bar",
-						Count:            1,
-						RescheduleOnLost: false,
+						Name:  "bar",
+						Count: 1,
 					},
 					{
-						Name:             "baz",
-						Count:            2,
-						RescheduleOnLost: true,
+						Name:  "baz",
+						Count: 2,
 					},
 					{
-						Name:             "bam",
-						Count:            1,
-						RescheduleOnLost: true,
+						Name:  "bam",
+						Count: 1,
 					},
 				},
 			},
@@ -1300,12 +1292,6 @@ func TestJobDiff(t *testing.T) {
 								Name: "Count",
 								Old:  "",
 								New:  "1",
-							},
-							{
-								Type: DiffTypeAdded,
-								Name: "RescheduleOnLost",
-								Old:  "",
-								New:  "true",
 							},
 						},
 					},
@@ -1333,12 +1319,6 @@ func TestJobDiff(t *testing.T) {
 								Type: DiffTypeDeleted,
 								Name: "Count",
 								Old:  "1",
-								New:  "",
-							},
-							{
-								Type: DiffTypeDeleted,
-								Name: "RescheduleOnLost",
-								Old:  "true",
 								New:  "",
 							},
 						},
@@ -1855,31 +1835,6 @@ func TestTaskGroupDiff(t *testing.T) {
 						Name: "Meta[foo]",
 						Old:  "bar",
 						New:  "baz",
-					},
-				},
-			},
-		},
-		{
-			TestCase: "Reschedule on lost diff",
-			Old: &TaskGroup{
-				Name:             "foo",
-				Count:            100,
-				RescheduleOnLost: true,
-			},
-			New: &TaskGroup{
-				Name:             "foo",
-				Count:            100,
-				RescheduleOnLost: false,
-			},
-			Expected: &TaskGroupDiff{
-				Type: DiffTypeEdited,
-				Name: "foo",
-				Fields: []*FieldDiff{
-					{
-						Type: DiffTypeEdited,
-						Name: "RescheduleOnLost",
-						Old:  "true",
-						New:  "false",
 					},
 				},
 			},
@@ -2417,12 +2372,13 @@ func TestTaskGroupDiff(t *testing.T) {
 			Old:      &TaskGroup{},
 			New: &TaskGroup{
 				ReschedulePolicy: &ReschedulePolicy{
-					Attempts:      1,
-					Interval:      15 * time.Second,
-					Delay:         5 * time.Second,
-					MaxDelay:      20 * time.Second,
-					DelayFunction: "exponential",
-					Unlimited:     false,
+					Attempts:         1,
+					Interval:         15 * time.Second,
+					Delay:            5 * time.Second,
+					MaxDelay:         20 * time.Second,
+					DelayFunction:    "exponential",
+					Unlimited:        false,
+					RescheduleOnLost: true,
 				},
 			},
 			Expected: &TaskGroupDiff{
@@ -2468,6 +2424,12 @@ func TestTaskGroupDiff(t *testing.T) {
 								Old:  "",
 								New:  "false",
 							},
+							{
+								Type: DiffTypeEdited,
+								Name: "RescheduleOnLost",
+								Old:  "",
+								New:  "true",
+							},
 						},
 					},
 				},
@@ -2477,12 +2439,13 @@ func TestTaskGroupDiff(t *testing.T) {
 			TestCase: "ReschedulePolicy deleted",
 			Old: &TaskGroup{
 				ReschedulePolicy: &ReschedulePolicy{
-					Attempts:      1,
-					Interval:      15 * time.Second,
-					Delay:         5 * time.Second,
-					MaxDelay:      20 * time.Second,
-					DelayFunction: "exponential",
-					Unlimited:     false,
+					Attempts:         1,
+					Interval:         15 * time.Second,
+					Delay:            5 * time.Second,
+					MaxDelay:         20 * time.Second,
+					DelayFunction:    "exponential",
+					Unlimited:        false,
+					RescheduleOnLost: true,
 				},
 			},
 			New: &TaskGroup{},
@@ -2529,6 +2492,12 @@ func TestTaskGroupDiff(t *testing.T) {
 								Old:  "false",
 								New:  "",
 							},
+							{
+								Type: DiffTypeEdited,
+								Name: "RescheduleOnLost",
+								Old:  "true",
+								New:  "",
+							},
 						},
 					},
 				},
@@ -2538,22 +2507,24 @@ func TestTaskGroupDiff(t *testing.T) {
 			TestCase: "ReschedulePolicy edited",
 			Old: &TaskGroup{
 				ReschedulePolicy: &ReschedulePolicy{
-					Attempts:      1,
-					Interval:      1 * time.Second,
-					DelayFunction: "exponential",
-					Delay:         20 * time.Second,
-					MaxDelay:      1 * time.Minute,
-					Unlimited:     false,
+					Attempts:         1,
+					Interval:         1 * time.Second,
+					DelayFunction:    "exponential",
+					Delay:            20 * time.Second,
+					MaxDelay:         1 * time.Minute,
+					Unlimited:        false,
+					RescheduleOnLost: true,
 				},
 			},
 			New: &TaskGroup{
 				ReschedulePolicy: &ReschedulePolicy{
-					Attempts:      2,
-					Interval:      2 * time.Second,
-					DelayFunction: "constant",
-					Delay:         30 * time.Second,
-					MaxDelay:      1 * time.Minute,
-					Unlimited:     true,
+					Attempts:         2,
+					Interval:         2 * time.Second,
+					DelayFunction:    "constant",
+					Delay:            30 * time.Second,
+					MaxDelay:         1 * time.Minute,
+					Unlimited:        true,
+					RescheduleOnLost: false,
 				},
 			},
 			Expected: &TaskGroupDiff{
@@ -2592,6 +2563,12 @@ func TestTaskGroupDiff(t *testing.T) {
 								Name: "Unlimited",
 								Old:  "false",
 								New:  "true",
+							},
+							{
+								Type: DiffTypeEdited,
+								Name: "RescheduleOnLost",
+								Old:  "true",
+								New:  "false",
 							},
 						},
 					},
@@ -2653,6 +2630,12 @@ func TestTaskGroupDiff(t *testing.T) {
 							{
 								Type: DiffTypeNone,
 								Name: "Unlimited",
+								Old:  "false",
+								New:  "false",
+							},
+							{
+								Type: DiffTypeNone,
+								Name: "RescheduleOnLost",
 								Old:  "false",
 								New:  "false",
 							},

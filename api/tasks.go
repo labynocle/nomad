@@ -134,29 +134,43 @@ type ReschedulePolicy struct {
 
 	// Unlimited allows rescheduling attempts until they succeed
 	Unlimited *bool `mapstructure:"unlimited" hcl:"unlimited,optional"`
+
+	// RescheduleOnLost is used to control how allocations on lost
+	// nodes are handled, when true, such jobs are rescheduled.
+	RescheduleOnLost *bool `hcl:"reschedule_on_lost,optional"`
 }
 
 func (r *ReschedulePolicy) Merge(rp *ReschedulePolicy) {
 	if rp == nil {
 		return
 	}
+
 	if rp.Interval != nil {
 		r.Interval = rp.Interval
 	}
+
 	if rp.Attempts != nil {
 		r.Attempts = rp.Attempts
 	}
+
 	if rp.Delay != nil {
 		r.Delay = rp.Delay
 	}
+
 	if rp.DelayFunction != nil {
 		r.DelayFunction = rp.DelayFunction
 	}
+
 	if rp.MaxDelay != nil {
 		r.MaxDelay = rp.MaxDelay
 	}
+
 	if rp.Unlimited != nil {
 		r.Unlimited = rp.Unlimited
+	}
+
+	if rp.RescheduleOnLost != nil {
+		r.RescheduleOnLost = rp.RescheduleOnLost
 	}
 }
 
@@ -179,6 +193,10 @@ func (r *ReschedulePolicy) Canonicalize(jobType string) {
 	}
 	if r.Unlimited == nil {
 		r.Unlimited = dp.Unlimited
+	}
+
+	if r.RescheduleOnLost == nil {
+		r.RescheduleOnLost = dp.RescheduleOnLost
 	}
 }
 
@@ -217,8 +235,9 @@ func NewDefaultReschedulePolicy(jobType string) *ReschedulePolicy {
 			MaxDelay:      pointerOf(1 * time.Hour),
 			Unlimited:     pointerOf(true),
 
-			Attempts: pointerOf(0),
-			Interval: pointerOf(time.Duration(0)),
+			Attempts:         pointerOf(0),
+			Interval:         pointerOf(time.Duration(0)),
+			RescheduleOnLost: pointerOf(true),
 		}
 	case "batch":
 		// This needs to be in sync with DefaultBatchJobReschedulePolicy
@@ -229,18 +248,20 @@ func NewDefaultReschedulePolicy(jobType string) *ReschedulePolicy {
 			Delay:         pointerOf(5 * time.Second),
 			DelayFunction: pointerOf("constant"),
 
-			MaxDelay:  pointerOf(time.Duration(0)),
-			Unlimited: pointerOf(false),
+			MaxDelay:         pointerOf(time.Duration(0)),
+			Unlimited:        pointerOf(false),
+			RescheduleOnLost: pointerOf(true),
 		}
 
 	case "system":
 		dp = &ReschedulePolicy{
-			Attempts:      pointerOf(0),
-			Interval:      pointerOf(time.Duration(0)),
-			Delay:         pointerOf(time.Duration(0)),
-			DelayFunction: pointerOf(""),
-			MaxDelay:      pointerOf(time.Duration(0)),
-			Unlimited:     pointerOf(false),
+			Attempts:         pointerOf(0),
+			Interval:         pointerOf(time.Duration(0)),
+			Delay:            pointerOf(time.Duration(0)),
+			DelayFunction:    pointerOf(""),
+			MaxDelay:         pointerOf(time.Duration(0)),
+			Unlimited:        pointerOf(false),
+			RescheduleOnLost: pointerOf(true),
 		}
 
 	default:
@@ -248,12 +269,13 @@ func NewDefaultReschedulePolicy(jobType string) *ReschedulePolicy {
 		// function and we need to ensure a non-nil object is returned so that
 		// the canonicalization runs without panicking.
 		dp = &ReschedulePolicy{
-			Attempts:      pointerOf(0),
-			Interval:      pointerOf(time.Duration(0)),
-			Delay:         pointerOf(time.Duration(0)),
-			DelayFunction: pointerOf(""),
-			MaxDelay:      pointerOf(time.Duration(0)),
-			Unlimited:     pointerOf(false),
+			Attempts:         pointerOf(0),
+			Interval:         pointerOf(time.Duration(0)),
+			Delay:            pointerOf(time.Duration(0)),
+			DelayFunction:    pointerOf(""),
+			MaxDelay:         pointerOf(time.Duration(0)),
+			Unlimited:        pointerOf(false),
+			RescheduleOnLost: pointerOf(true),
 		}
 	}
 	return dp
@@ -268,14 +290,14 @@ func (r *ReschedulePolicy) Copy() *ReschedulePolicy {
 	return nrp
 }
 
-func (p *ReschedulePolicy) String() string {
-	if p == nil {
+func (r *ReschedulePolicy) String() string {
+	if r == nil {
 		return ""
 	}
-	if *p.Unlimited {
-		return fmt.Sprintf("unlimited with %v delay, max_delay = %v", *p.DelayFunction, *p.MaxDelay)
+	if *r.Unlimited {
+		return fmt.Sprintf("unlimited with %v delay, max_delay = %v", *r.DelayFunction, *r.MaxDelay)
 	}
-	return fmt.Sprintf("%v in %v with %v delay, max_delay = %v", *p.Attempts, *p.Interval, *p.DelayFunction, *p.MaxDelay)
+	return fmt.Sprintf("%v in %v with %v delay, max_delay = %v", *r.Attempts, *r.Interval, *r.DelayFunction, *r.MaxDelay)
 }
 
 // Spread is used to serialize task group allocation spread preferences
@@ -459,7 +481,6 @@ type TaskGroup struct {
 	MaxClientDisconnect       *time.Duration            `mapstructure:"max_client_disconnect" hcl:"max_client_disconnect,optional"`
 	Scaling                   *ScalingPolicy            `hcl:"scaling,block"`
 	Consul                    *Consul                   `hcl:"consul,block"`
-	RescheduleOnLost          *bool                     `hcl:"reschedule_on_lost,optional"`
 }
 
 // NewTaskGroup creates a new TaskGroup.
@@ -577,9 +598,6 @@ func (g *TaskGroup) Canonicalize(job *Job) {
 	}
 	for _, s := range g.Services {
 		s.Canonicalize(nil, g, job)
-	}
-	if g.RescheduleOnLost == nil {
-		g.RescheduleOnLost = pointerOf(true)
 	}
 }
 

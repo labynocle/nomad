@@ -31,9 +31,9 @@ func Job() *structs.Job {
 		},
 		TaskGroups: []*structs.TaskGroup{
 			{
-				Name:             "web",
-				Count:            10,
-				RescheduleOnLost: true,
+				Name:  "web",
+				Count: 10,
+
 				Constraints: []*structs.Constraint{
 					{
 						LTarget: "${attr.consul.version}",
@@ -52,10 +52,11 @@ func Job() *structs.Job {
 					RenderTemplates: false,
 				},
 				ReschedulePolicy: &structs.ReschedulePolicy{
-					Attempts:      2,
-					Interval:      10 * time.Minute,
-					Delay:         5 * time.Second,
-					DelayFunction: "constant",
+					Attempts:         2,
+					Interval:         10 * time.Minute,
+					Delay:            5 * time.Second,
+					DelayFunction:    "constant",
+					RescheduleOnLost: true,
 				},
 				Migrate: structs.DefaultMigrateStrategy(),
 				Networks: []*structs.NetworkResource{

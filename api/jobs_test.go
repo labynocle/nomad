@@ -312,9 +312,8 @@ func TestJobs_Canonicalize(t *testing.T) {
 				},
 				TaskGroups: []*TaskGroup{
 					{
-						Name:             pointerOf(""),
-						Count:            pointerOf(1),
-						RescheduleOnLost: pointerOf(true),
+						Name:  pointerOf(""),
+						Count: pointerOf(1),
 						EphemeralDisk: &EphemeralDisk{
 							Sticky:  pointerOf(false),
 							Migrate: pointerOf(false),
@@ -328,12 +327,13 @@ func TestJobs_Canonicalize(t *testing.T) {
 							RenderTemplates: pointerOf(false),
 						},
 						ReschedulePolicy: &ReschedulePolicy{
-							Attempts:      pointerOf(0),
-							Interval:      pointerOf(time.Duration(0)),
-							DelayFunction: pointerOf("exponential"),
-							Delay:         pointerOf(30 * time.Second),
-							MaxDelay:      pointerOf(1 * time.Hour),
-							Unlimited:     pointerOf(true),
+							Attempts:         pointerOf(0),
+							Interval:         pointerOf(time.Duration(0)),
+							DelayFunction:    pointerOf("exponential"),
+							Delay:            pointerOf(30 * time.Second),
+							MaxDelay:         pointerOf(1 * time.Hour),
+							Unlimited:        pointerOf(true),
+							RescheduleOnLost: pointerOf(true),
 						},
 						Consul: &Consul{
 							Namespace: "",
@@ -400,9 +400,9 @@ func TestJobs_Canonicalize(t *testing.T) {
 				JobModifyIndex:    pointerOf(uint64(0)),
 				TaskGroups: []*TaskGroup{
 					{
-						Name:             pointerOf(""),
-						Count:            pointerOf(1),
-						RescheduleOnLost: pointerOf(true),
+						Name:  pointerOf(""),
+						Count: pointerOf(1),
+
 						EphemeralDisk: &EphemeralDisk{
 							Sticky:  pointerOf(false),
 							Migrate: pointerOf(false),
@@ -416,12 +416,13 @@ func TestJobs_Canonicalize(t *testing.T) {
 							RenderTemplates: pointerOf(false),
 						},
 						ReschedulePolicy: &ReschedulePolicy{
-							Attempts:      pointerOf(1),
-							Interval:      pointerOf(24 * time.Hour),
-							DelayFunction: pointerOf("constant"),
-							Delay:         pointerOf(5 * time.Second),
-							MaxDelay:      pointerOf(time.Duration(0)),
-							Unlimited:     pointerOf(false),
+							Attempts:         pointerOf(1),
+							Interval:         pointerOf(24 * time.Hour),
+							DelayFunction:    pointerOf("constant"),
+							Delay:            pointerOf(5 * time.Second),
+							MaxDelay:         pointerOf(time.Duration(0)),
+							Unlimited:        pointerOf(false),
+							RescheduleOnLost: pointerOf(true),
 						},
 						Consul: &Consul{
 							Namespace: "",
@@ -508,12 +509,13 @@ func TestJobs_Canonicalize(t *testing.T) {
 							RenderTemplates: pointerOf(false),
 						},
 						ReschedulePolicy: &ReschedulePolicy{
-							Attempts:      pointerOf(0),
-							Interval:      pointerOf(time.Duration(0)),
-							DelayFunction: pointerOf("exponential"),
-							Delay:         pointerOf(30 * time.Second),
-							MaxDelay:      pointerOf(1 * time.Hour),
-							Unlimited:     pointerOf(true),
+							Attempts:         pointerOf(0),
+							Interval:         pointerOf(time.Duration(0)),
+							DelayFunction:    pointerOf("exponential"),
+							Delay:            pointerOf(30 * time.Second),
+							MaxDelay:         pointerOf(1 * time.Hour),
+							Unlimited:        pointerOf(true),
+							RescheduleOnLost: pointerOf(true),
 						},
 						Consul: &Consul{
 							Namespace: "",
@@ -557,9 +559,8 @@ func TestJobs_Canonicalize(t *testing.T) {
 				},
 				TaskGroups: []*TaskGroup{
 					{
-						Name:             pointerOf("cache"),
-						Count:            pointerOf(1),
-						RescheduleOnLost: pointerOf(true),
+						Name:  pointerOf("cache"),
+						Count: pointerOf(1),
 						RestartPolicy: &RestartPolicy{
 							Interval: pointerOf(5 * time.Minute),
 							Attempts: pointerOf(10),
@@ -669,9 +670,8 @@ func TestJobs_Canonicalize(t *testing.T) {
 				},
 				TaskGroups: []*TaskGroup{
 					{
-						Name:             pointerOf("cache"),
-						Count:            pointerOf(1),
-						RescheduleOnLost: pointerOf(true),
+						Name:  pointerOf("cache"),
+						Count: pointerOf(1),
 						RestartPolicy: &RestartPolicy{
 							Interval:        pointerOf(5 * time.Minute),
 							Attempts:        pointerOf(10),
@@ -680,12 +680,13 @@ func TestJobs_Canonicalize(t *testing.T) {
 							RenderTemplates: pointerOf(false),
 						},
 						ReschedulePolicy: &ReschedulePolicy{
-							Attempts:      pointerOf(0),
-							Interval:      pointerOf(time.Duration(0)),
-							DelayFunction: pointerOf("exponential"),
-							Delay:         pointerOf(30 * time.Second),
-							MaxDelay:      pointerOf(1 * time.Hour),
-							Unlimited:     pointerOf(true),
+							Attempts:         pointerOf(0),
+							Interval:         pointerOf(time.Duration(0)),
+							DelayFunction:    pointerOf("exponential"),
+							Delay:            pointerOf(30 * time.Second),
+							MaxDelay:         pointerOf(1 * time.Hour),
+							Unlimited:        pointerOf(true),
+							RescheduleOnLost: pointerOf(true),
 						},
 						EphemeralDisk: &EphemeralDisk{
 							Sticky:  pointerOf(false),
@@ -799,7 +800,6 @@ func TestJobs_Canonicalize(t *testing.T) {
 				},
 			},
 		},
-
 		{
 			name: "periodic",
 			input: &Job{
@@ -934,9 +934,9 @@ func TestJobs_Canonicalize(t *testing.T) {
 				},
 				TaskGroups: []*TaskGroup{
 					{
-						Name:             pointerOf("bar"),
-						Count:            pointerOf(1),
-						RescheduleOnLost: pointerOf(true),
+						Name:  pointerOf("bar"),
+						Count: pointerOf(1),
+
 						EphemeralDisk: &EphemeralDisk{
 							Sticky:  pointerOf(false),
 							Migrate: pointerOf(false),
@@ -950,12 +950,13 @@ func TestJobs_Canonicalize(t *testing.T) {
 							RenderTemplates: pointerOf(false),
 						},
 						ReschedulePolicy: &ReschedulePolicy{
-							Attempts:      pointerOf(0),
-							Interval:      pointerOf(time.Duration(0)),
-							DelayFunction: pointerOf("exponential"),
-							Delay:         pointerOf(30 * time.Second),
-							MaxDelay:      pointerOf(1 * time.Hour),
-							Unlimited:     pointerOf(true),
+							Attempts:         pointerOf(0),
+							Interval:         pointerOf(time.Duration(0)),
+							DelayFunction:    pointerOf("exponential"),
+							Delay:            pointerOf(30 * time.Second),
+							MaxDelay:         pointerOf(1 * time.Hour),
+							Unlimited:        pointerOf(true),
+							RescheduleOnLost: pointerOf(true),
 						},
 						Consul: &Consul{
 							Namespace: "",
@@ -999,12 +1000,13 @@ func TestJobs_Canonicalize(t *testing.T) {
 							RenderTemplates: pointerOf(false),
 						},
 						ReschedulePolicy: &ReschedulePolicy{
-							Attempts:      pointerOf(0),
-							Interval:      pointerOf(time.Duration(0)),
-							DelayFunction: pointerOf("exponential"),
-							Delay:         pointerOf(30 * time.Second),
-							MaxDelay:      pointerOf(1 * time.Hour),
-							Unlimited:     pointerOf(true),
+							Attempts:         pointerOf(0),
+							Interval:         pointerOf(time.Duration(0)),
+							DelayFunction:    pointerOf("exponential"),
+							Delay:            pointerOf(30 * time.Second),
+							MaxDelay:         pointerOf(1 * time.Hour),
+							Unlimited:        pointerOf(true),
+							RescheduleOnLost: pointerOf(true),
 						},
 						Consul: &Consul{
 							Namespace: "",
@@ -1043,8 +1045,7 @@ func TestJobs_Canonicalize(t *testing.T) {
 				ParentID: pointerOf("lol"),
 				TaskGroups: []*TaskGroup{
 					{
-						Name:             pointerOf("bar"),
-						RescheduleOnLost: pointerOf(true),
+						Name: pointerOf("bar"),
 						RestartPolicy: &RestartPolicy{
 							Delay:    pointerOf(15 * time.Second),
 							Attempts: pointerOf(2),
@@ -1132,12 +1133,13 @@ func TestJobs_Canonicalize(t *testing.T) {
 							RenderTemplates: pointerOf(false),
 						},
 						ReschedulePolicy: &ReschedulePolicy{
-							Attempts:      pointerOf(0),
-							Interval:      pointerOf(time.Duration(0)),
-							DelayFunction: pointerOf("exponential"),
-							Delay:         pointerOf(30 * time.Second),
-							MaxDelay:      pointerOf(1 * time.Hour),
-							Unlimited:     pointerOf(true),
+							Attempts:         pointerOf(0),
+							Interval:         pointerOf(time.Duration(0)),
+							DelayFunction:    pointerOf("exponential"),
+							Delay:            pointerOf(30 * time.Second),
+							MaxDelay:         pointerOf(1 * time.Hour),
+							Unlimited:        pointerOf(true),
+							RescheduleOnLost: pointerOf(true),
 						},
 						Consul: &Consul{
 							Namespace: "",
@@ -1187,12 +1189,13 @@ func TestJobs_Canonicalize(t *testing.T) {
 							RenderTemplates: pointerOf(false),
 						},
 						ReschedulePolicy: &ReschedulePolicy{
-							Attempts:      pointerOf(0),
-							Interval:      pointerOf(time.Duration(0)),
-							DelayFunction: pointerOf("exponential"),
-							Delay:         pointerOf(30 * time.Second),
-							MaxDelay:      pointerOf(1 * time.Hour),
-							Unlimited:     pointerOf(true),
+							Attempts:         pointerOf(0),
+							Interval:         pointerOf(time.Duration(0)),
+							DelayFunction:    pointerOf("exponential"),
+							Delay:            pointerOf(30 * time.Second),
+							MaxDelay:         pointerOf(1 * time.Hour),
+							Unlimited:        pointerOf(true),
+							RescheduleOnLost: pointerOf(true),
 						},
 						Consul: &Consul{
 							Namespace: "",
@@ -1229,7 +1232,6 @@ func TestJobs_Canonicalize(t *testing.T) {
 				},
 			},
 		},
-
 		{
 			name: "multiregion",
 			input: &Job{
